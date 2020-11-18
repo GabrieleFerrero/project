@@ -10,19 +10,21 @@ void setup() {
 }
 
 void loop() {
+  //Legge una stringa in input
   if(Serial.available()){
     char ch = Serial.read();
 
     if((ch=='\n') || (ch=='\r')){
       
     }else{
+      //Stampa carattere per carattere e man mano chiama la funzione process
       Serial.println(ch);
       process(ch);
     }
 
 }
 }
-
+//Conversione dei vari caratteri in una sequenza di 6 segnali che possono essere lunghi o corti
 void process(char ch){
     switch(ch){
       case '0':
@@ -389,14 +391,14 @@ void process(char ch){
       break;
   }
 }
-
+//IL segnale lungo consiste nell'inviare un segnale di 100ms
 void segnaleLungo(){
   digitalWrite(pin_accensione_laser, HIGH);
   delay(time_segnale_lungo);
   digitalWrite(pin_accensione_laser, LOW);
   delay(time_pausa_tra_segnali);
 }
-
+//IL segnale corto consiste nell'inviare un segnale di 50ms
 void segnaleCorto(){
   digitalWrite(pin_accensione_laser, HIGH);
   delay(time_segnale_corto);
