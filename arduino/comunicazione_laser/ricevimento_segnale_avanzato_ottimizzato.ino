@@ -15,19 +15,19 @@ long ch = 0;
 
 
 void loop() {
-
+    //Per 6 volte chiamo la funzione acquisizione_stringa_binario
     for(int i = 0; i < 6; i++){
       acquisizione_stringa_binario();
     }
    
-
+  //Chiama la funzione conversione e lo stampa
     char carattere;
     carattere = conversione();
     Serial.print(carattere);
     ch = 0;
 
   }
-
+//Calcola per quanti millisecondi il laser è acceso
 void acquisizione_stringa_binario(){
   while(analogRead(pin_sensore_fotoresistenza)<segnale_analogico_HIGH){}
 
@@ -41,7 +41,7 @@ void acquisizione_stringa_binario(){
     }
 }
 
-
+//Converte il segnale in un carattere
 char conversione(){
   char carattere;
   switch(ch){
