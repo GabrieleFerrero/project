@@ -20,7 +20,7 @@ time.sleep(1)
 
 #inizializzazione finestra di turtle
 screen = turtle.Screen()
-screen.title("LAVAGNA")
+screen.title("GRAFICO")
 screen.setworldcoordinates(-50, -50, 50, 50)
 screen.bgpic("sfondo_oscilloscopio.gif")
 screen.cv._rootwindow.resizable(False, False)   #blocco la ridimensione della finestra
