@@ -8,6 +8,15 @@ standard library of Gabriele Ferrero
 #include <stdbool.h>
 #include <math.h>
 
+
+#define and &&
+#define or ||
+#define is ==
+#define not !=
+#define reverse =!
+
+
+
 int ctoi(char *carattere){      // funzione per convertire una stringa contenente un numero intero
 
     int numero_finale=0;
@@ -74,128 +83,37 @@ int ctoi(char *carattere){      // funzione per convertire una stringa contenent
 
 #define max_caratteri_per_stringa 3000
 
-void scanfInt(char stringa[max_caratteri_per_stringa], int *numero){      //funzione per il la stampa di una stringa e l'acquisizione di un int
+int scanfInt(char stringa[max_caratteri_per_stringa]){      //funzione per il la stampa di una stringa e l'acquisizione di un int
+    int numero;
     printf("%s", stringa);
-    scanf("%d", numero);
+    scanf("%d", &numero);
+    return numero;
 }
 
-void scanfChar(char stringa[max_caratteri_per_stringa], char *carattere){      //funzione per il la stampa di una stringa e l'acquisizione di un char
+char scanfChar(char stringa[max_caratteri_per_stringa]){      //funzione per il la stampa di una stringa e l'acquisizione di un char
+    char carattere;
     printf("%s", stringa);
-    scanf("%c", carattere);
+    scanf("%*c");
+    scanf("%c", &carattere);
+    return carattere;
 }
 
-void scanfFloat(char stringa[max_caratteri_per_stringa], float *numero_con_virgola){      //funzione per il la stampa di una stringa e l'acquisizione di un float
+float scanfFloat(char stringa[max_caratteri_per_stringa]){      //funzione per il la stampa di una stringa e l'acquisizione di un float
+    float numero_con_virgola;   
     printf("%s", stringa);
-    scanf("%f", numero_con_virgola);
+    scanf("%f", &numero_con_virgola);
+    return numero_con_virgola;
 }
 
-void scanfString(char stringa[max_caratteri_per_stringa], char *string){      //funzione per il la stampa di una stringa e l'acquisizione di una stringa
+char* scanfString(char stringa[max_caratteri_per_stringa]){      //funzione per il la stampa di una stringa e l'acquisizione di una stringa
     char ch;
     int i=0;
+    char* string=(char*)malloc(10000*sizeof(char));
     printf("%s", stringa);
     for(i=0; (ch=getchar())!='\n' ; i++){
         (*(string+i))=ch;
     }
     (*(string+i))='\0';
+
+    return string;
 }
-
-
-
-
-
-
-
-
-/*
-
-#define numero_parametri_int 2
-#define numero_parametri_char 2
-#define numero_parametri_float 2
-#define numero_parametri_caratteri_speciali 1
-
-
-bool controlloNumero(char *dato, char stringa[max_caratteri_per_stringa]){   // funzione in cui si è obbligati a mettere prima e sempre la lettera i (intero) e poi tutto il resto
-
-    bool verifica=true;
-    int numero_cifre_per_int=0;
-    int numero_int=0;
-
-    for(numero_cifre_per_int=0; (*(dato+numero_cifre_per_int))!=' '; numero_cifre_per_int++)  //for per scoprire da quante cifre è composto un numero
-
-    numero_int=ctoi(dato, numero_cifre_per_int);
-
-    for(int i=0; ((*(stringa+i))!='\0') && (i<max_caratteri_per_stringa); i++){
-
-        switch (*(stringa+i)){
-        case 'i':   //caso intero
-
-        break;
-
-        case 'f':
-        break;
-
-        case 'c':
-        if((dato>='a' && dato<='z') || (dato>='A' && dato<='Z')){
-
-        }else{
-            return false;
-        }
-        
-        break;
-
-
-        case '+':   //caso positivo
-        if(numero>0){
-        }else{
-            return false;
-        }
-        break;
-
-
-        case '-':   //caso negativo
-        if(numero>0){
-        }else{
-            return false;
-        }
-        break;
-
-
-        case '=':
-        break;
-        case 'P':
-        break;
-        case 'D':
-        break;
-        case 'p':
-        break;
-
-
-        case 'M':
-        if(dato>='A' && dato<='Z'){
-        }else{
-            return false;
-        }
-        break;
-
-
-        case 'm':
-        if(dato>='a' && dato<='z'){
-        }else{
-            return false;
-        }
-        break;
-
-
-        default:
-        return false;
-        break;
-    }
-    }
-
-    return verifica;
-    
-}
-
-bool controlloChar(char carattere, char stringa[]){}
-
-*/
