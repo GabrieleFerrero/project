@@ -34,7 +34,7 @@ void loop() {
     //Chiama la funzione conversione e lo stampa
     
     carattere = conversione();
-    Serial.print(carattere);
+    Serial.println(carattere);
     ch = 0;
 
   }
