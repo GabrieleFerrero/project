@@ -7,6 +7,11 @@ With this library we are going to manage the inputs that the [LeapLeap](https://
 - [Java Arduino Communication Library](https://github.com/HirdayGupta/Java-Arduino-Communication-Library)
 - [Leap Motion](https://developer-archive.leapmotion.com/documentation/java/devguide/Leap_SDK_Overview.html)
 - [Processing](https://processing.org/)
+
+## Examples
+
+![es1](es1.gif)
+
 ## Authors
 
 - [@IsabellaBianco](https://github.com/IsabellaBianco)
