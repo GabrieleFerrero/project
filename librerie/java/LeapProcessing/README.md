@@ -39,16 +39,16 @@ With this library we are going to manage the inputs that the [LeapMotion](https:
 
 | Name                                            | Parameter | Returned Type | Description                |
 | :---------------------------------------------- | :-------- | :------------ | :------------------------- |
-|` super.getHands()`                              | `void`    | `HandLP[]`    | Return  |
-|` HandLP.getDataHand().getPalm()`                | `void`    | `float[]`     | Your API key |
-|` HandLP.getDataHand().getCoordPalmProcessing()` | `void`    | `float[]`     | Your API key |
-|` HandLP.getDataHand().getCoord_x()`             | `void`    | `float[][]`   | Your API key |
-|` HandLP.getDataHand().getCoord_y()`             | `void`    | `float[][]`   | Your API key |
-|` HandLP.getDataHand().getCoord_z()`             | `void`    | `float[][]`   | Your API key |
-|` HandLP.getDataHand().getCoordXProcessing()`    | `void`    | `float[][]`   | Your API key |
-|` HandLP.getDataHand().getCoordYProcessing()`    | `void`    | `float[][]`   | Your API key |
-|` HandLP.getDataHand().getCoordZProcessing()`    | `void`    | `float[][]`   | Your API key |
-|` HandLP.getDataHand().thumbIndexDistance()`     | `void`    | `float`       | Your API key |
+|` super.getHands()`                              | `void`    | `HandLP[]`    | Returns an array of hands, where the first is the right and the second is the left.  |
+|` HandLP.getDataHand().getPalm()`                | `void`    | `float[]`     | Returns the x, y, z coordinates of the palm of the hand |
+|` HandLP.getDataHand().getCoordPalmProcessing()` | `void`    | `float[]`     | Returns the x, y, z coordinates based on Processing of the palm of the hand |
+|` HandLP.getDataHand().getCoord_x()`             | `void`    | `float[][]`   | Returns the x coordinates of the bones of the fingers of the hand (starting from the thumb to the little finger) |
+|` HandLP.getDataHand().getCoord_y()`             | `void`    | `float[][]`   | Returns the y coordinates of the bones of the fingers of the hand (starting from the thumb to the little finger) |
+|` HandLP.getDataHand().getCoord_z()`             | `void`    | `float[][]`   | Returns the z coordinates of the bones of the fingers of the hand (starting from the thumb to the little finger) |
+|` HandLP.getDataHand().getCoordXProcessing()`    | `void`    | `float[][]`   | Returns the x coordinates of Processing of the bones of the fingers of the hand (starting from the thumb to the little finger) |
+|` HandLP.getDataHand().getCoordYProcessing()`    | `void`    | `float[][]`   | Returns the y coordinates of Processing of the bones of the fingers of the hand (starting from the thumb to the little finger) |
+|` HandLP.getDataHand().getCoordZProcessing()`    | `void`    | `float[][]`   | Returns the z coordinates of Processing of the bones of the fingers of the hand (starting from the thumb to the little finger) |
+|` HandLP.getDataHand().thumbIndexDistance()`     | `void`    | `float`       | Return the distance between the tip of the thumb and the tip of the index finger of the right hand. |
 
 ## Libraries used
 
