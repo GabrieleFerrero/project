@@ -12,7 +12,7 @@ With this library we are going to manage the inputs that the [LeapMotion](https:
     ![img_tutorial](./img/img_tutorial.jpeg)
 
 2. After extracting the file, install the .deb / .exe / .dmg program present in the downloaded folder
-    ![video_tutorial](https://github.com/GabrieleFerrero/Progetti/edit/main/librerie/java/LeapProcessing/img/tutorial.mp4)
+    ![video_tutorial](./img/tutorial.gif)
 
 3. Create an IntelliJ idea project, following the steps in the video below
 
