@@ -37,7 +37,7 @@ With this library we are going to manage the inputs that the [LeapMotion](https:
 ## API Reference
 
 
-| Name                                            | Parameter | Returned Type | Description                |
+| Function Name                                   | Parameter | Returned Type | Description                |
 | :---------------------------------------------- | :-------- | :------------ | :------------------------- |
 |` super.getHands()`                              | `void`    | `HandLP[]`    | Returns an array of hands, where the first is the right and the second is the left.  |
 |` HandLP.getDataHand().getPalm()`                | `void`    | `float[]`     | Returns the x, y, z coordinates of the palm of the hand |
