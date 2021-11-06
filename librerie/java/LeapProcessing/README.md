@@ -4,13 +4,15 @@ With this library we are going to manage the inputs that the [LeapMotion](https:
 
 ## Examples
 
-![es1](es1.gif)
+![es1](./img/es1.gif)
 
 ## Tutorial
 
 1. Install the [LeapMotion SDK](https://developer.leapmotion.com/tracking-software-download), choosing the OS you are using.
+    ![img_tutorial](./img/img_tutorial.jpeg)
 
 2. After extracting the file, install the .deb / .exe / .dmg program present in the downloaded folder
+    ![gif](./img/tutorial.mp4)
 
 3. Create an IntelliJ idea project, following the steps in the video below
 
