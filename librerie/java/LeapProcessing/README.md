@@ -8,11 +8,11 @@ With this library we are going to manage the inputs that the [LeapMotion](https:
 
 ## Tutorial
 
--1 Install the LeapMotion SDK, choosing the OS you are using.
+1. Install the LeapMotion SDK, choosing the OS you are using.
 
--2 After extracting the file, install the .deb / .exe / .dmg program present in the downloaded folder
+2. After extracting the file, install the .deb / .exe / .dmg program present in the downloaded folder
 
--3 Create an IntelliJ idea project, following the steps in the video below
+3. Create an IntelliJ idea project, following the steps in the video below
 
 #### This is the code used in the video
 
