@@ -7,6 +7,9 @@ In this project we tried to make a robotic arm by controlling it through a [Leap
 - [Java Arduino Communication Library](https://github.com/HirdayGupta/Java-Arduino-Communication-Library)
 - [LeapProcessing](https://github.com/GabrieleFerrero/Progetti/tree/main/librerie/java/LeapProcessing)
 
+## Link
+- [Link](https://youtu.be/08P2p3_jtuo) per il video di youtube.
+
 ## Authors
 
 - [@IsabellaBianco](https://github.com/IsabellaBianco)
