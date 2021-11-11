@@ -50,6 +50,10 @@ With this library we are going to manage the inputs that the [LeapMotion](https:
 |` HandLP.getDataHand().getCoordZProcessing()`    | `void`    | `float[][]`   | Returns the z coordinates of Processing of the bones of the fingers of the hand (starting from the thumb to the little finger) |
 |` HandLP.getDataHand().thumbIndexDistance()`     | `void`    | `float`       | Return the distance between the tip of the thumb and the tip of the index finger of the right hand. |
 
+## Information
+
+If the hands are not detected by the Leap, the functions for obtaining the coordinates of the points in processing will all return negative values (except the Z axis).
+
 ## Libraries used
 
 - [Leap Motion](https://developer-archive.leapmotion.com/documentation/java/devguide/Leap_SDK_Overview.html)
