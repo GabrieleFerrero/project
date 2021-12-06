@@ -26,15 +26,16 @@ Di seguito sono riportare alcune immagini che mostrano la stazione meteorologica
 
 
 ---
-
+---
 ### Funzionamento
 
 La stazione meteorologica è gestita in questo modo:
 
 
-- Un web server esterno invia una richiesta di acquisizione dei dati (ogni minuto circa) al raspberry presente all'interno della stazione meteorologica che a sua volta invierà una richiesta all'arduino nano, che acquisirà i dati li invierà al raspberry che li invierà al web server che a sua volta li memorizzerà all'interno di un database.
+- Un web server esterno invia una richiesta di acquisizione dei dati (ogni minuto circa) al raspberry presente all'interno della stazione meteorologica che a sua volta invierà una richiesta all'arduino nano, che acquisirà i dati, li invierà al raspberry che li invierà al web server che a sua volta li memorizzerà all'interno di un database.
 - Per vedere i dati della stazione meteorologica, è possibile visitare il nostro sito web, a questo [link](//).
 
+---
 ---
 ### Autori
 - [@GabrieleFerrero](https://github.com/GabrieleFerrero)
