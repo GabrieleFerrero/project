@@ -23,7 +23,7 @@ seguenti sensori e i seguenti componenti (per maggiori specifiche
 Inoltre tutta la componentistica è stata inserita all'interno di un struttura in plexiglass e montata sopra ad una struttura in metallo altra circa 2 metri.
 Di seguito sono riportare alcune immagini che mostrano la stazione meteorologica:
 
-
+![interno_stazione](./foto/img_04.jpeg) ![esterno_stazione](./foto/img_15.jpeg)
 
 ---
 ---
