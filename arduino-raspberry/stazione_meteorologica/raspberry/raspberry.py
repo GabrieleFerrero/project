@@ -39,7 +39,6 @@ import smtplib
 
 #       DATI STAZIONE      #
 id_stazione = 0
-elenco_tipi_dati_sensori = []
 sensori = []
 # ------------------------ #
 
@@ -86,6 +85,11 @@ MAILTO = "..."
 fist_time_arduino_disconnected = False
 # ------------------------ #
 
+#          THREAD          #
+scatta_foto = threading.Thread()
+blocco_arduino = threading.Lock()
+# ------------------------ #
+
 """ //////////////////////////////////////////////////////////////// """
 
 """ ____________________DEFINIZIONI ROUTE FLASK_____________________ """
@@ -94,7 +98,8 @@ app = Flask(__name__)
 
 @app.route(f"/stazione-meteorologica/dato/sensori-attuali")
 def datiSensoriAttuali():
-    return jsonify(letturaDatiSensori())
+    with blocco_arduino:
+        return jsonify(letturaDatiSensori())
 
 """ //////////////////////////////////////////////////////////////// """
 
@@ -224,14 +229,11 @@ def letturaDatiSensori():
         misurazioni = arduino.read_all().decode() # leggo i dati inviati dall'arduino
         misurazioni = misurazioni.split("#")
 
-        for sensore, tipo in zip(sensori, elenco_tipi_dati_sensori):
+        for sensore in sensori:
             if sensore in misurazioni:
                 i = misurazioni.index(sensore)
-                
-                if tipo == "TEXT": dato = misurazioni[i+1]
-                else: dato = float(misurazioni[i+1])
 
-                dati_sensori[sensore] = dato
+                dati_sensori[sensore] = float(misurazioni[i+1])
         
         fist_time_arduino_disconnected = False
     except:
@@ -243,11 +245,8 @@ def letturaDatiSensori():
             arduino.close()
             fist_time_arduino_disconnected = True
 
-        for sensore, tipo in zip(sensori, elenco_tipi_dati_sensori):
-            if tipo == "TEXT": dato = "8888.8"
-            else: dato = 8888.8
-
-            dati_sensori[sensore] = dato
+        for sensore in sensori:
+            dati_sensori[sensore] = 8888.8
 
         try:
             arduino = serial.Serial('/dev/ttyUSB0',115200)
@@ -273,6 +272,7 @@ def sendEmailForProblems(msg):
     except:
         file_info_error.error("error send email")
 
+
 """ //////////////////////////////////////////////////////////////// """
 
 """ ------------------MAIN------------------ """
@@ -281,18 +281,16 @@ def main():
 
     # estrazione dati da file
     global sensori
-    global elenco_tipi_dati_sensori
     global id_stazione
     with open(f"{dir_path}/config_file.txt") as config_file_stazione:
         righe = config_file_stazione.readlines()
         # estrazione elenco_sensori e tipi_sensori
         sensori = righe[0].replace("\n","").split(",")
 
-        elenco_tipi_dati_sensori = righe[1].replace("\n","").split(",")
-
-        id_stazione = int(righe[2].replace("\n",""))
+        id_stazione = int(righe[1].replace("\n",""))
 
 
+    global scatta_foto
     scatta_foto = ScattaFoto()
     scatta_foto.start()
 

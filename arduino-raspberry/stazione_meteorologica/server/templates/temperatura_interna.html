@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>SENSORE DI PIOGGIA</title>
+        <title>SENSORE DI TEMPERATURA INTERNA</title>
         <script src="/static/js/jquery-3.6.0.min.js"></script>
         <script src="/static/js/eventi.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js"></script>
@@ -146,7 +146,7 @@
         width: 100%;
         float:right;
     }
-    p, pre{
+    p{
         font-family: 'Kodchasan', sans-serif;
         font-size: 1.3rem;
         color: black;
@@ -163,7 +163,7 @@
     #immagine{
         margin:0;
         padding:0;
-        background-image: url("/static/img/sfondo_pioggia.png");
+        background-image: url("/static/img/sfondo_temperatura.png");
         background-repeat: no-repeat;
         background-attachment: fixed;
         background-size: cover;
@@ -230,9 +230,9 @@
     }
 
     </style>
-    <body onload="inizializzazionePagineSensori('{{dati_della_stazione_meteorologica[1]}}','pioggia', '%', '{{dati_della_stazione_meteorologica[2]}}')">
+    <body onload="inizializzazionePagineSensori('{{dati_della_stazione_meteorologica[1]}}', 'temperatura_interna', '°C', '{{dati_della_stazione_meteorologica[2]}}')">
         <div id="immagine">
-            Sensore di Pioggia
+            Sensore di Temperatura interna
         </div>
 
         <div id="divSensori">
@@ -241,23 +241,24 @@
         <div id="altroT">
            <table style="border: 0;">
             <tr>
-                <td>Quantità di pioggia attuale:        </td>
+                <td>Temperatura attuale:        </td>
                 <td id="valoreAttuale"></td>
             </tr>
            </table><br><br><br>
            <div id="testoSensore"> <br><h1>Informazioni sul nostro sensore: </h1>
-            <img src="/static/img/foto_pioggia.jpg" style="float: left; width: 20%; height: 20%;">
-            <p style="width: 58%;">Il sensore di pioggia presente all’interno della stazione meteorologica è il 2846-RAINMOD.
-                Questo tipo di sensore è formato da una basetta che è posta all’esterno della
-                 stazione meteorologica e che se bagnata dalla pioggia comunica che sta piovendo e l’intensità.<br>
-                Questo è il <a href="https://www.futurashop.it/sensore-pioggia-con-elettronica-2846-rainmod">link</a>
+                <img src="/static/img/foto_temperatura_interna.jpg" style="float: left; width: 20%; height: 20%;">
+                <p style="width: 58%;">Il sensore di temperatura presente all’interno della stazione meteorologica è il GY-68 BMP180.
+                    Questo tipo di sensore oltre a rilevare la temperatura misura anche la pressione. Il FS 200-SHT20 
+                    è molto utilizzato per la misurazione del punto di rugiada.<br>
+                Questo è il <a href="https://www.amazon.it/AZDelivery-elettrico-pressione-atmosferica-Raspberry/dp/B07D8S617X/ref=sr_1_1?__mk_it_IT=%C3%85M%C3%85%C5%BD%C3%95%C3%91&keywords=gy68%2Bbmp180&qid=1639324913&sr=8-1&th=1">link</a>
                 della scheda tecnica di questo sensore, nel caso si volessero ulteriori informazioni
                 riguardo il suo funzionamento e l’aspetto elettrico. </p>
-           <img src="/static/img/foto_pioggia.jpg" style="float: right; width: 20%; height: 20%;">
+                <img src="/static/img/foto_temperatura_interna.jpg" style="float: right; width: 20%; height: 20%;">
+            
            </div>
             <div id="divGrafico"> <br><h1>Il grafico: </h1>
                 <p>Di seguito è riportato il grafico con i dati registrati durante l'anno ed aggiornati ad oggi. </p><br><br>
-                <p id="pSelect">Dati di questo <select name="arco_temporale" id="arco_temporale" onchange="opzioneSelezionata('pioggia', '-')">
+                <p id="pSelect">Dati di questo <select name="arco_temporale" id="arco_temporale" onchange="opzioneSelezionata('temperatura_interna', '°C')">
                     <option value="optgiorno">giorno</option>
                     <option value="optmese">mese</option>
                     <option value="optanno">anno</option>

@@ -1,13 +1,14 @@
-#include <Arduino.h>
-#include <sht1xalt.h>
-#include <SFE_BMP180.h>
+#include "Arduino.h"
+#include "sht1xalt.h"
+#include "SFE_BMP180.h"
 #include "Wire.h"
 #include "Max44009.h"
 
 
 const float VALORE_NULLO = 9999.9;
 #define PIN_VENTOLE 7
-#define TEMPERATURA_ATTIVAZIONE_VENTOLE 0
+#define TEMPERATURA_ATTIVAZIONE_VENTOLE 5
+#define TEMPERATURA_SPEGNIMENTO_VENTOLE 0
 
 //----------------Settaggio SENSORE SHT10 (temperatura esterna, umidità)----------------
 #define dataPin 10
@@ -26,9 +27,9 @@ SFE_BMP180 pressure;
 //---------------------------------------------------------------------------------------------
 
 //----------------Settaggio SENSORE RILEVATORE UV (raggi uv)----------------
-#define MIN_VALORE_NM 200
-#define MAX_VALORE_NM 370
-#define PIN_UV A1
+#define MIN_VALORE_NM 227
+#define MAX_VALORE_NM 1170
+#define PIN_UV A3
 //--------------------------------------------------------------------------
 
 
@@ -41,11 +42,17 @@ SFE_BMP180 pressure;
 //--------------------------------------------------------------------------
 
 //----------------Settaggio SENSORE MAX44009 (luminosità)----------------
-Max44009 myLux(0x4A);
-uint32_t lastDisplay = 0;
+Max44009 myLuxA(0x4A);
+Max44009 myLuxB(0x4B);
 //--------------------------------------------------------------------------
 
-String misurazioni ="";
+String misurazioni = "";
+
+String letturaDatiSHT10();
+String letturaDatiGY68BMP180();
+String letturaDatiRaggiUV();
+String letturaDatiSensorePioggia();
+String letturaDatiMAX44009();
 
 void setup() {
   
@@ -115,7 +122,7 @@ String letturaDatiSHT10(){
 //---------Lettura dati del sensore di temperatura interna e pressione----------
 String letturaDatiGY68BMP180(){
   char status;
-  double T=VALORE_NULLO, P, p0=VALORE_NULLO, a;
+  double T=VALORE_NULLO, P, p0=VALORE_NULLO;
   status = pressure.startTemperature();
   if (status != 0)
   {
@@ -136,7 +143,7 @@ String letturaDatiGY68BMP180(){
             if(T >= TEMPERATURA_ATTIVAZIONE_VENTOLE){
               digitalWrite(PIN_VENTOLE, HIGH);
             }
-            else{
+            else if (T <= TEMPERATURA_SPEGNIMENTO_VENTOLE){
               digitalWrite(PIN_VENTOLE, LOW);
             }
           }
@@ -151,9 +158,10 @@ String letturaDatiGY68BMP180(){
 //---------Lettura dati del sensore di raggi ultravioletti----------
 String letturaDatiRaggiUV(){
   //Valore del dato in mVolt
-  float uv_voltage = analogRead(PIN_UV)*5/1024;
-  float uv = map(uv_voltage, 0, 1, MIN_VALORE_NM, MAX_VALORE_NM);
-  return "uv#"+String(uv)+"#";
+  float uv_sensor = analogRead(PIN_UV)*1000;
+  float uv_voltage = uv_sensor/1024*5;
+  //int uv_index = map(uv_voltage, 0, 1, MIN_VALORE_NM, MAX_VALORE_NM);
+  return "uv#"+String(uv_voltage)+"#";
 }
 //-------------------------------------------------------------------
 
@@ -171,17 +179,21 @@ String letturaDatiSensorePioggia(){
 //---------Lettura dati del sensore di luce----------
 //Valori tra 0,045 a 188.000 lux
 String letturaDatiMAX44009(){
-  uint32_t interval = 1000;
   float v_lux;
-  if (millis() - lastDisplay >= interval)
+  v_lux = myLuxA.getLux();
+  int err = myLuxA.getError();
+  if (err != 0)
   {
-    lastDisplay += interval;
-    v_lux = myLux.getLux();
-    int err = myLux.getError();
+    v_lux = myLuxB.getLux();
+    err = myLuxB.getError();
     if (err != 0)
     {
       v_lux = VALORE_NULLO;
     }
+  }
+
+  if(v_lux != VALORE_NULLO){
+    v_lux = v_lux/1000;
   }
   return "luce#"+String(v_lux)+"#";
 }

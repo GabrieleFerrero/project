@@ -17,7 +17,7 @@
 
 """ _______________________INCLUSIONE LIBRERIE________________________"""
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_file
 import threading
 from pathlib import Path
 import logzero
@@ -38,8 +38,12 @@ import subprocess
 SECONDI_TRA_AGGIORNAMENTO_DATI = 60*1
 # ------------------------ #
 
-#           LOCK           #
+#          THREAD          #
 blocco_thread = threading.Lock()
+ottenimento_dati = threading.Thread()
+raggruppamento_dati = threading.Thread()
+eliminazione_dati_vecchi = threading.Thread()
+gestione_comandi = threading.Thread()
 # ------------------------ #
 
 #   ACCESSO ACCOUNT MEGA   #
@@ -66,14 +70,15 @@ file_info_error= logzero.setup_logger(name='file_info_error', logfile=f"{dir_pat
 stazioni_elenco_ID = []
 stazioni_sensori = {}
 stazioni_address = {}
-elenco_tipi_dati_sensori = {}
 # ------------------------ #
 
 #     OPZIONI POSSIBILI    #
-altre_opzioni = ["dati_attuali"]
+altre_opzioni = ["dati_attuali", "dati_giornalieri", "dati_mensili", "dati_annuali"]
 # ------------------------ #
 
 #            DATI          #
+dati_raggruppati_giornalieri = {}
+dati_raggruppati_mensili = {}
 dati_raggruppati_annuali = {}
 dati_raggruppati_attuali = {}
 # ------------------------ #
@@ -85,32 +90,48 @@ dati_raggruppati_attuali = {}
 
 app = Flask(__name__)
 
-@app.route("/stazioni-meteorologiche/<numero_stazione>/html/<pagina_richiesta>")
+@app.route("/stazione-meteorologica/<numero_stazione>/html/<pagina_richiesta>")
 def inviaPagina(numero_stazione, pagina_richiesta):
     try:
         numero_stazione = int(numero_stazione)
-        if numero_stazione in stazioni_elenco_ID and pagina_richiesta in stazioni_sensori[numero_stazione]: return render_template(f'{pagina_richiesta}.html', dati_della_stazione_meteorologica=[f"{TIPO_SITO}{SERVER_ADDRESS}:{SERVER_PORT}",numero_stazione])
-        elif numero_stazione in stazioni_elenco_ID and pagina_richiesta == "index": return render_template("index.html", dati_della_stazione_meteorologica=[f"{TIPO_SITO}://{SERVER_ADDRESS}:{SERVER_PORT}",numero_stazione])
+        if numero_stazione in stazioni_elenco_ID and pagina_richiesta in stazioni_sensori[numero_stazione]: 
+            elenco_sens = ""
+            for el in stazioni_sensori[numero_stazione]:
+                elenco_sens += f"{el},"
+            return render_template(f'{pagina_richiesta}.html', dati_della_stazione_meteorologica=[f"{TIPO_SITO}{SERVER_ADDRESS}:{SERVER_PORT}",numero_stazione, elenco_sens[:-1]])
+        elif numero_stazione in stazioni_elenco_ID and pagina_richiesta == "index": 
+            elenco_sens = ""
+            for el in stazioni_sensori[numero_stazione]:
+                elenco_sens += f"{el},"
+            return render_template("index.html", dati_della_stazione_meteorologica=[f"{TIPO_SITO}://{SERVER_ADDRESS}:{SERVER_PORT}",numero_stazione, elenco_sens[:-1]])
         else: return render_template("pagina_non_trovata.html")
     except:
         file_info_error.error("error web page")
         return render_template("pagina_di_errore.html")
 
 
-@app.route("/stazioni-meteorologiche/<numero_stazione>/dato/<dato_richiesto>")
-def inviaDato(numero_stazione, dato_richiesto):
+@app.route("/stazione-meteorologica/<numero_stazione>/dato/<tipo>/<dato_richiesto>")
+def inviaDato(numero_stazione, tipo, dato_richiesto):
     try:
         numero_stazione = int(numero_stazione)
-        if numero_stazione in stazioni_elenco_ID and (dato_richiesto in stazioni_sensori[numero_stazione] or dato_richiesto in altre_opzioni):
-            if dato_richiesto == altre_opzioni[0]:
+        if numero_stazione in stazioni_elenco_ID and (dato_richiesto in stazioni_sensori[numero_stazione] or dato_richiesto == "generico")and tipo in altre_opzioni:
+            if tipo == altre_opzioni[0]:
                 return jsonify(dati_raggruppati_attuali[numero_stazione])
-            else:
-                return jsonify({"data_ora_stazione":dati_raggruppati_annuali[numero_stazione]["data_ora_stazione"],"dato_richiesto":dati_raggruppati_annuali[numero_stazione][dato_richiesto]})
+            elif tipo == altre_opzioni[1]:
+                return jsonify({"data_ora":dati_raggruppati_giornalieri[numero_stazione]["data_ora_stazione"],"dato_richiesto":dati_raggruppati_giornalieri[numero_stazione][dato_richiesto]})
+            elif tipo == altre_opzioni[2]:
+                return jsonify({"data_ora":dati_raggruppati_mensili[numero_stazione]["data_giorno"],"dato_richiesto":dati_raggruppati_mensili[numero_stazione][dato_richiesto]})
+            elif tipo == altre_opzioni[3]:
+                return jsonify({"data_ora":dati_raggruppati_annuali[numero_stazione]["data_mese"],"dato_richiesto":dati_raggruppati_annuali[numero_stazione][dato_richiesto]})
         else:
             return render_template("dato_non_trovato.html")
     except:
         file_info_error.error("error web page")
         return render_template("pagina_di_errore.html")
+
+@app.route("/stazioni-meteorologiche/download")
+def download():
+    return send_file(f"{dir_path}/database/dati_sensori_stazioni.db", as_attachment=True)
     
 
 """ //////////////////////////////////////////////////////////////// """
@@ -128,7 +149,7 @@ class OttenimentoDati(threading.Thread):
     def run(self):
         global dati_raggruppati_attuali
 
-        while True:
+        while self.running:
 
             with blocco_thread:
 
@@ -158,11 +179,8 @@ class OttenimentoDati(threading.Thread):
 
                         sql = f"INSERT INTO dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{data_ora_server}\",\"{data_ora_stazione}\","
 
-                        for tipo_dato, nome_sensore in zip(elenco_tipi_dati_sensori[n], stazioni_sensori[n]):
-                            virgolette = ""
-                            if tipo_dato == "TEXT": virgolette = "\""
-
-                            sql += f"{virgolette}{dict_ricevuto[nome_sensore]}{virgolette},"
+                        for nome_sensore in stazioni_sensori[n]:
+                            sql += f"{dict_ricevuto[nome_sensore]},"
 
                         sql = sql[:-1]
                         sql += ")"
@@ -191,36 +209,155 @@ class RaggruppamentoDati(threading.Thread):
         self.running = True
 
     def run(self):
+        global dati_raggruppati_giornalieri
+        global dati_raggruppati_mensili
         global dati_raggruppati_annuali
 
-        while True:
+        data = str(datetime.datetime.utcnow())
+        giorno_att = data.split(" ")[0].split("-")[2]
+        mese_att = data.split(" ")[0].split("-")[1]
+        anno_att = data.split(" ")[0].split("-")[0]
+        giorno_prec = giorno_att
+        mese_prec = mese_att
+
+
+        while self.running:
 
             with blocco_thread:
 
-                conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
-                cur = conn.cursor()
+                try:
 
-                for n in stazioni_elenco_ID:    
+                    conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
+                    cur = conn.cursor()
 
-                    try:
+                    data = str(datetime.datetime.utcnow())
+                    giorno_att = data.split(" ")[0].split("-")[2]
+                    mese_att = data.split(" ")[0].split("-")[1]
+                    anno_att = data.split(" ")[0].split("-")[0]
+
+                    for n in stazioni_elenco_ID:   
+
+                        # estrazione dati da tabella totale
+
+                        dict_dati_giornalieri = {}
+
+                        dict_dati_giornalieri["data_ora_stazione"] = []
+
+                        for tipo_sensore in stazioni_sensori[n]:
+                            dict_dati_giornalieri[tipo_sensore] = []
+
+
+                        for row in cur.execute(f"SELECT * FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_att} %:%:%.%\""): # acquisisco i dati solo del giorno
+                            dict_dati_giornalieri["data_ora_stazione"].append(row[2])
+                            for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
+                                dict_dati_giornalieri[tipo_sensore].append(row[numero_sensore+3])  # +3 perché salto l'id + le due date
+
+                        dati_raggruppati_giornalieri[n] = dict_dati_giornalieri.copy()
+
+                        # estrazione dati da tabella giorni
+
+                        dict_dati_mensili = {}
+
+                        dict_dati_mensili["data_giorno"] = []
+
+                        for tipo_sensore in stazioni_sensori[n]:
+                            dict_dati_mensili[tipo_sensore] = []
+
+                        for row in cur.execute(f"SELECT * FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_att}-%\""): # acquisisco i dati solo del giorno
+                            dict_dati_mensili["data_giorno"].append(row[1])
+                            for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
+                                dict_dati_mensili[tipo_sensore].append(row[numero_sensore+1])
+
+                        dati_raggruppati_mensili[n] = dict_dati_mensili.copy()
+
+                        # estrazione dati da tabella mese
+
                         dict_dati_annuali = {}
 
-                        dict_dati_annuali["data_ora_server"] = []
-                        dict_dati_annuali["data_ora_stazione"] = []
+                        dict_dati_annuali["data_mese"] = []
 
                         for tipo_sensore in stazioni_sensori[n]:
                             dict_dati_annuali[tipo_sensore] = []
 
-                        for row in cur.execute(f"SELECT * FROM dati_stazione_{n}"):
-                            dict_dati_annuali["data_ora_server"].append(row[1])
-                            dict_dati_annuali["data_ora_stazione"].append(row[2])
+                        for row in cur.execute(f"SELECT * FROM media_mesi_dati_stazione_{n}"):
+                            dict_dati_annuali["data_mese"].append(row[1])
                             for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                dict_dati_annuali[tipo_sensore].append(row[numero_sensore+3])  # +3 perché salto la chiave primaria e le due date
+                                dict_dati_annuali[tipo_sensore].append(row[numero_sensore+2])
 
                         dati_raggruppati_annuali[n] = dict_dati_annuali.copy()
 
-                    except:
-                        file_info_error.error("error in extract data from database")
+
+
+
+                        # --------------------------------------------------------------- #
+                        # --------------------------------------------------------------- #
+                        
+                        if giorno_att != giorno_prec:
+                            if mese_att != mese_prec:
+                                # devo estrarre i dati dalla tabella di media mesi e fare la media
+                                dict_media_dati_annuali = {}
+
+                                dict_media_dati_annuali["data_mese"] = f"{anno_att}-{mese_prec}"
+
+                                for tipo_sensore in stazioni_sensori[n]:
+                                    for row in cur.execute(f"SELECT avg(media_giorni_dati_stazione_{n}.{tipo_sensore}) FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_prec}-%\" and media_giorni_dati_stazione_{n}.{tipo_sensore} != 9999.9 and media_giorni_dati_stazione_{n}.{tipo_sensore} != 8888.8"):
+                                        if row[0] == None: dict_media_dati_annuali[tipo_sensore] = 9999.9
+                                        else: dict_media_dati_annuali[tipo_sensore] = row[0]
+
+                                # inserire i dati nel database
+
+                                nomi_colonne = "data_mese,"
+                                for nome_sensore in stazioni_sensori[n]:
+                                    nomi_colonne += f"\"{nome_sensore}\","
+
+                                sql = f"INSERT INTO media_mesi_dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{dict_media_dati_annuali['data_mese']}\","
+                                
+                                for nome_sensore in stazioni_sensori[n]:
+                                    sql += f"{dict_media_dati_annuali[nome_sensore]},"
+
+                                sql = sql[:-1]
+                                sql += ")"
+                                
+                                cur.execute(sql)
+                                conn.commit()
+
+                            else: # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                                
+                                dict_media_dati_mensili = {}
+
+                                dict_media_dati_mensili["data_giorno"] = f"{anno_att}-{mese_att}-{giorno_prec}"
+
+                                for tipo_sensore in stazioni_sensori[n]:
+                                    for row in cur.execute(f"SELECT avg(dati_stazione_{n}.{tipo_sensore}) FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_prec} %:%:%.%\" and dati_stazione_{n}.{tipo_sensore} != 9999.9 and dati_stazione_{n}.{tipo_sensore} != 8888.8"):
+                                        if row[0] == None: dict_media_dati_mensili[tipo_sensore] = 9999.9
+                                        else: dict_media_dati_mensili[tipo_sensore] = row[0]
+
+                             
+                                # inserire i dati nel database
+
+                                nomi_colonne = "data_giorno,"
+                                for nome_sensore in stazioni_sensori[n]:
+                                    nomi_colonne += f"\"{nome_sensore}\","
+
+                                sql = f"INSERT INTO media_giorni_dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{dict_media_dati_mensili['data_giorno']}\","
+                                
+                                for nome_sensore in stazioni_sensori[n]:
+                                    sql += f"{dict_media_dati_mensili[nome_sensore]},"
+
+                                sql = sql[:-1]
+                                sql += ")"
+                                
+                                cur.execute(sql)
+                                conn.commit()
+                                
+
+                        
+                        giorno_prec = giorno_att
+                        mese_prec = mese_att
+
+
+                except:
+                    file_info_error.error("error in extract data from database")
 
                 conn.close()
             
@@ -319,19 +456,27 @@ class GestioneComandi(threading.Thread):
                     print("|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|")
                     print(f"ID: {n}")
                     print(f"Elenco sensori: {stazioni_sensori[n]}")
-                    print(f"Elenco dei tipi dei dati restituiti dai sensori: {elenco_tipi_dati_sensori}")
                     print(f"Address: {stazioni_address[n]}")
                     print("|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|")
                 print("\n")
+            elif comando == "stop":
+                print("\nATTENDERE...")
+                with blocco_thread:
+                    print("\n--> Digitare Ctrl+c fino a quando il programma termina (uscita dall'opzione tra 10 secondi) <--\n")
+                    time.sleep(10)
+                    print("Tempo scaduto\n")
             elif comando == "help":
                 print("\nCOMANDI:\n")
                 print("- refresh --> serve per aggiornare il server quando si aggiungono nuove stazioni meteorologiche\n")
                 print("- delete:ID --> serve per eliminare dal server una stazione con l'ID specificato\n")
                 print("- list --> serve per mostrare la lista degli id delle stazioni meteorologiche attive \n")
                 print("- data --> serve per mostrare i dati che il server sa sulle stazioni meteorologiche\n")
+                print("- stop --> serve per poter terminare il programma in modo sicuro\n")
                 print("- help --> serve per mostrare i comandi possibili con le loro spiegazioni\n")
                 print("\n")
             else: print("\nCOMANDO NON RICONOSCIUTO\n")
+
+
 
             
         
@@ -346,12 +491,10 @@ def inizializzazioneStazioniMeteorologiche():
     global stazioni_elenco_ID
     global stazioni_sensori
     global stazioni_address
-    global elenco_tipi_dati_sensori
 
     stazioni_elenco_ID = []
     stazioni_sensori = {}
     stazioni_address = {}
-    elenco_tipi_dati_sensori = {}
     
     id = -1
 
@@ -367,34 +510,57 @@ def inizializzazioneStazioniMeteorologiche():
                     righe = config_file_stazione.readlines()
                     
                     # estrazione ID
-                    id = int(righe[2].replace("\n",""))
+                    id = int(righe[1].replace("\n",""))
                     stazioni_elenco_ID.append(id)
 
                     # estrazione elenco_sensori e tipi_sensori
                     stazioni_sensori[id] = righe[0].replace("\n","").split(",")   # aggiungo ["data_ora_server"] per poi potere memoriazzare l'ora di salvataggio dei dati
                     
-                    elenco_tipi_dati_sensori[id] = righe[1].replace("\n","").split(",")
                     # estrazione address_stazione
+                    stazioni_address[id] = righe[2].replace("\n","")
 
-                    stazioni_address[id] = righe[3].replace("\n","")
-
-                    # creazione tabella
+                    # creazione tabella contenente dati sensori
                     stringa_creazione_tabella = f"CREATE TABLE if not exists \"dati_stazione_{id}\" (\"ID_misurazioni\" INTEGER NOT NULL, \"data_ora_server\" TEXT, \"data_ora_stazione\" TEXT, "
                     
 
-                    for sensore, tipo in zip(stazioni_sensori[id], elenco_tipi_dati_sensori[id]):
-                        stringa_creazione_tabella += f"\"{sensore}\" {tipo}, "
+                    for sensore in stazioni_sensori[id]:
+                        stringa_creazione_tabella += f"\"{sensore}\" REAL, "
 
                     stringa_creazione_tabella += "PRIMARY KEY(\"ID_misurazioni\" AUTOINCREMENT))"
                     cur.execute(stringa_creazione_tabella)
 
                     con.commit()
+
+                    # creazione tabella contenente media giorni sensori
+                    stringa_creazione_tabella = f"CREATE TABLE if not exists \"media_giorni_dati_stazione_{id}\" (\"ID_media_giorno\" INTEGER NOT NULL, \"data_giorno\" TEXT, "
+                    
+
+                    for sensore in stazioni_sensori[id]:
+                        stringa_creazione_tabella += f"\"{sensore}\" REAL, "
+
+                    stringa_creazione_tabella += "PRIMARY KEY(\"ID_media_giorno\" AUTOINCREMENT))"
+                    cur.execute(stringa_creazione_tabella)
+
+                    con.commit()
+
+                    # creazione tabella contenente media mese sensori
+                    stringa_creazione_tabella = f"CREATE TABLE if not exists \"media_mesi_dati_stazione_{id}\" (\"ID_media_mese\" INTEGER NOT NULL, \"data_mese\" TEXT, "
+                    
+
+                    for sensore in stazioni_sensori[id]:
+                        stringa_creazione_tabella += f"\"{sensore}\" REAL, "
+
+                    stringa_creazione_tabella += "PRIMARY KEY(\"ID_media_mese\" AUTOINCREMENT))"
+                    cur.execute(stringa_creazione_tabella)
+
+                    con.commit()
+
             
             except:
                 file_info_error.error(f"error in creating the weather station")
+
         
         con.close()
-
 
 
 
@@ -404,12 +570,19 @@ def main():
 
     inizializzazioneStazioniMeteorologiche()
 
+    global ottenimento_dati
     ottenimento_dati = OttenimentoDati()
     ottenimento_dati.start()
+
+    global raggruppamento_dati
     raggruppamento_dati = RaggruppamentoDati()
     raggruppamento_dati.start()
+
+    global eliminazione_dati_vecchi
     eliminazione_dati_vecchi = EliminazioneDatiVecchi()
     eliminazione_dati_vecchi.start()
+
+    global gestione_comandi
     gestione_comandi = GestioneComandi()
     gestione_comandi.start()
 

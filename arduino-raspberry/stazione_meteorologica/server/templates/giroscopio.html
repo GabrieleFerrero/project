@@ -275,51 +275,12 @@
         width: 100%;
     }
     </style>
-    <body onload="inizializzazionePagineSensori('{{dati_della_stazione_meteorologica[1]}}','giroscopio', '°/s')">
+    <body onload="inizializzazionePagineSensori('{{dati_della_stazione_meteorologica[1]}}','giroscopio', '°/s', '{{dati_della_stazione_meteorologica[2]}}')">
         <div id="immagine">
             Giroscopio
         </div>
 
         <div id="divSensori">
-            <nav class="menu-visibility">
-                <ul>
-                    <li><a class="submenu" href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/index" onmousemove="coloraIcona('home')" onmouseleave="decoloraIcona('home')">
-                        <img id=img_home src="/static/img/home.png" class = "icon_sensori">
-                    </a>
-                    </li>
-                    
-                    <li ><a href="./pioggia" onmousemove="coloraIcona('rain')" onmouseleave="decoloraIcona('rain')">
-                        <img id="img_rain" src="/static/img/rain.png" class = "icon_sensori">
-                    </a></li>
-                    <li><a href="./fulmini" onmousemove="coloraIcona('fulmine')" onmouseleave="decoloraIcona('fulmine')">
-                        <img id="img_fulmine" src="/static/img/fulmine.png" class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="./aria" onmousemove="coloraIcona('air')" onmouseleave="decoloraIcona('air')">
-                        <img id="img_air" src="/static/img/air.png"  class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="./uv" onmousemove="coloraIcona('uv')" onmouseleave="decoloraIcona('uv')">
-                        <img id="img_uv" src="/static/img/uv.png"class = "icon_sensori" >
-                    </a></li>
-                    <li ><a href="./luce" onmousemove="coloraIcona('sunlight')" onmouseleave="decoloraIcona('sunlight')">
-                        <img id="img_sunlight" src="/static/img/sunlight.png"class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="./temperatura" onmousemove="coloraIcona('temperature')" onmouseleave="decoloraIcona('temperature')">
-                        <img id="img_temperature" src="/static/img/temperature.png"class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="./pressione" onmousemove="coloraIcona('pressure')" onmouseleave="decoloraIcona('pressure')">
-                        <img id="img_pressure" src="/static/img/pressure.png"class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="./umidita" onmousemove="coloraIcona('humidity')" onmouseleave="decoloraIcona('humidity')">
-                        <img id="img_humidity" src="/static/img/humidity.png"class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="./magnetometro" onmousemove="coloraIcona('magnetometer')" onmouseleave="decoloraIcona('magnetometer')">
-                        <img id="img_magnetometer" src="/static/img/magnetometer.png"class = "icon_sensori">
-                    </a></li>
-                    <li ><a href="#" onmousemove="coloraIcona('gyroscope')" onmouseleave="decoloraIcona('gyroscope')">
-                        <img id="img_gyroscope" src="/static/img/gyroscope.png"class = "icon_sensori">
-                    </a></li>
-                </ul>
-            </nav>
         </div>
 
         <div id="altroT">

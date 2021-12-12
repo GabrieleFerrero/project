@@ -231,45 +231,13 @@
             
     </style>
 </head>
-<body onload="inizializzazionePaginaPrincipale('{{dati_della_stazione_meteorologica[1]}}')">
+<body onload="inizializzazionePaginaPrincipale('{{dati_della_stazione_meteorologica[1]}}', '{{dati_della_stazione_meteorologica[2]}}')">
     <div id="immagine">
         Stazione Meteorologica
     </div>
 
     <div id="divSensori">
-        <nav class="menu-visibility">
-            <ul>
-                <li><a class="submenu" href="#" onmousemove="coloraIcona('home')" onmouseleave="decoloraIcona('home')">
-                    <img id=img_home src="/static/img/home.png" class = "icon_sensori">
-                </a>
-                <ul>
-                    <li><a href="#chi">Chi siamo</a></li>
-                    <li><a href="#dati">Dati in tempo reale</a></li>		
-                    <li><a href="#dove">Dove si trova</a></li>
-                    <li><a href="#contatti">Contatti utili</a></li>
-                </ul> 
-                </li>
-                
-                <li ><a href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/pioggia" onmousemove="coloraIcona('rain')" onmouseleave="decoloraIcona('rain')">
-                    <img id="img_rain" src="/static/img/rain.png" class = "icon_sensori">
-                </a></li>
-                <li ><a href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/uv" onmousemove="coloraIcona('uv')" onmouseleave="decoloraIcona('uv')">
-                    <img id="img_uv" src="/static/img/uv.png"class = "icon_sensori" >
-                </a></li>
-                <li ><a href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/luce" onmousemove="coloraIcona('sunlight')" onmouseleave="decoloraIcona('sunlight')">
-                    <img id="img_sunlight" src="/static/img/sunlight.png"class = "icon_sensori">
-                </a></li>
-                <li ><a href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/temperatura" onmousemove="coloraIcona('temperature')" onmouseleave="decoloraIcona('temperature')">
-                    <img id="img_temperature" src="/static/img/temperature.png"class = "icon_sensori">
-                </a></li>
-                <li ><a href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/pressione" onmousemove="coloraIcona('pressure')" onmouseleave="decoloraIcona('pressure')">
-                    <img id="img_pressure" src="/static/img/pressure.png"class = "icon_sensori">
-                </a></li>
-                <li ><a href="/stazioni-meteorologiche/{{dati_della_stazione_meteorologica[1]}}/html/umidita" onmousemove="coloraIcona('humidity')" onmouseleave="decoloraIcona('humidity')">
-                    <img id="img_humidity" src="/static/img/humidity.png"class = "icon_sensori">
-                </a></li>
-            </ul>
-        </nav>
+       
     </div>
         <div id="chi"><br><h1>Chi siamo?</h1>
             <p style="float: left; width: 78%;">
@@ -286,6 +254,16 @@
         <div id="dati"><br><h1>I dati dei sensori in tempo reale</h1>
             <p>Questi sono i dati in tempo reale della nostra stazione meteorologica, che vengono
                 aggiornati in automatico ogni minuto circa.
+            </p>
+            <p id="ora_dati"></p>
+            <table id="tblSensori">
+            </table>
+        </div>
+
+        <div id="scarica_dati"><br><h1>Scarica i nostri dati</h1>
+            <p>È possibile scaricare il database dove sono presenti tutte le misurazioni nel corso dell'anno, di tutte
+                le stazioni meteorologiche in funzione, cliccando <a href="/stazioni-meteorologiche/download">qui</a>.
+                
             </p>
             <p id="ora_dati"></p>
             <table id="tblSensori">

@@ -16,7 +16,7 @@ var canvas_sensori = {
 /*----------------FUNZIONI PER AGGIORNARE I DATI DELLA TABELLA NELLA PAGINA PRINCIPALE---------------- */
 function aggiornaDati() {
     $.ajax({
-        url: percorso+"dato/dati_attuali",
+        url: percorso+"dato/dati_attuali/generico",
         type: "GET",
         dataType: "json",
         success: function(dati_sensori) {
@@ -31,13 +31,15 @@ function aggiornaPaginaPrincipale(){
     aggiornaDati()
 }
 
-function inizializzazionePaginaPrincipale(id_della_stazione_meteorologica){
+function inizializzazionePaginaPrincipale(id_della_stazione_meteorologica, stringa_lista_sensori){
+    disegnaBarraOrizzontale(stringa_lista_sensori, id_della_stazione_meteorologica, true);
     calcolaPercorso(id_della_stazione_meteorologica)
     aggiornaPaginaPrincipale();
     id_aggiornamento_dati = setInterval(aggiornaPaginaPrincipale, 10000);
 }
 
-function inizializzazionePagineSensori(id_della_stazione_meteorologica, sensore, unita_di_misura){
+function inizializzazionePagineSensori(id_della_stazione_meteorologica, sensore, unita_di_misura, stringa_lista_sensori){
+    disegnaBarraOrizzontale(stringa_lista_sensori, id_della_stazione_meteorologica, false);
     calcolaPercorso(id_della_stazione_meteorologica)
     onLoadSensore(sensore, unita_di_misura)
 }
@@ -58,7 +60,7 @@ function aggiornaPagina(dati_sensori){
             paragrafo.innerHTML = "Dati aggiornati il "+data_paragrafo[0] + ":" + data_paragrafo[1] + ":" + data_paragrafo[2];
         }
         else{
-            tblSensori.innerHTML += "<tr><td class=\"tdSensori\">"+key+"</td><td class=\"tdSensori\">+"+value+"</td></tr>"
+            tblSensori.innerHTML += "<tr><td class=\"tdSensori\">"+key+"</td><td class=\"tdSensori\">"+value+"</td></tr>"
         }
     }
     tblSensori.innerHTML += ""
@@ -75,7 +77,8 @@ function onLoadSensore(sensore, unitaMisura){
          canvas_sensori[sensore] = new Chart(
     document.getElementById('grafico'),
     );
-    ottieniDati(sensore, unitaMisura);
+        ottieniDatoAttuale(sensore);
+        opzioneSelezionata(sensore, unitaMisura);
     }
     else{
         ottieniDatiGiroscopio();
@@ -101,51 +104,102 @@ function ottieniDatiGiroscopio(){
 }
 
 //Ottengo i dati del sensore richiesti dal serer e chiamo la funzione per visualizzarli
-function ottieniDati(sensore, unitaMisura){
+
+
+function ottieniDatiGiornalieri(sensore, unitaMisura){
+    console.log(sensore)
     $.ajax({
-        url: percorso+"dato/"+sensore,
+        url: percorso+"dato/dati_giornalieri/"+sensore,
         type: "GET",
         dataType: "json",
         success: function(dati_sensori) {
             if(sensore != "giroscopio"){
-                dati[sensore] = dati_sensori;
-                var dati_da_eliminare = [];
-            
-                for(let a = 0; a < dati[sensore]["dato_richiesto"].length; a++){
-                    if(dati[sensore]["dato_richiesto"][a]== 9999.9 || dati[sensore]["dato_richiesto"][a]== 8888.8){
-                      dati_da_eliminare.append(a);
-                    }
-                }
-                for(let a = 0; a < dati_da_eliminare.length;a++){
-                    delete dati[sensore]["dato_richiesto"][a];
-                    delete dati[sensore]["data_ora_stazione"][a];
-                }
-                visualizzaDati(sensore, 'Valori '+sensore + "("+unitaMisura+")", unitaMisura);
+                dati_sensori = eliminaDatiErrore(dati_sensori);
+                dati_sensori["data_ora"] = dati_sensori["data_ora"].map(valore => valore.split(" ")[1].split(":")[0]+":"+valore.split(" ")[1].split(":")[1])
+                visualizzaDati(sensore, 'Valori '+sensore + "("+unitaMisura+")", unitaMisura, dati_sensori);
             }
           
           }
       });
 }
 
+function ottieniDatiMensili(sensore, unitaMisura){
+    $.ajax({
+        url: percorso+"dato/dati_mensili/"+sensore,
+        type: "GET",
+        dataType: "json",
+        success: function(dati_sensori) {
+            if(sensore != "giroscopio"){
+                dati_sensori = eliminaDatiErrore(dati_sensori);
+                dati_sensori["data_ora"] = dati_sensori["data_ora"].map(valore => valore.split("-")[2]);
+                visualizzaDati(sensore, 'Valori '+sensore + "("+unitaMisura+")", unitaMisura, dati_sensori);
+                
+            }
+          
+          }
+      });
+}
+
+function ottieniDatiAnnuali(sensore, unitaMisura){
+    $.ajax({
+        url: percorso+"dato/dati_annuali/"+sensore,
+        type: "GET",
+        dataType: "json",
+        success: function(dati_sensori) {
+            if(sensore != "giroscopio"){
+                dati_sensori = eliminaDatiErrore(dati_sensori);
+                dati_sensori["data_ora"] = dati_sensori["data_ora"].map(valore => valore.split("-")[1]);
+                visualizzaDati(sensore, 'Valori '+sensore + "("+unitaMisura+")", unitaMisura, dati_sensori);   
+            }
+          
+          }
+      });
+}
+
+function ottieniDatoAttuale(sensore) {
+    $.ajax({
+        url: percorso+"dato/dati_attuali/generico",
+        type: "GET",
+        dataType: "json",
+        success: function(dati_sensori) {
+            dati[sensore] =  dati_sensori[sensore];
+            
+          }
+      });
+}
+
+function eliminaDatiErrore(dati_sensori){
+    var dati_da_eliminare = [];
+            
+    for(let a = 0; a < dati_sensori["dato_richiesto"].length; a++){
+        if(dati_sensori["dato_richiesto"][a]== 9999.9 || dati_sensori["dato_richiesto"][a]== 8888.8){
+            dati_da_eliminare.push(a);
+        }
+    }
+
+    for(let a = 0; a < dati_da_eliminare.length;a++){
+        dati_sensori["dato_richiesto"].splice(a, 1);
+        dati_sensori["data_ora"].splice(a, 1);
+    }
+    return dati_sensori;
+}
 /*------------------------------------------------------------------------------------------- */
 
 /*----------------FUNZIONI CHE VENGONO CHIAMATE PER POTER REALIZZARE I GRAFICI---------------------- */
 
-function visualizzaDati(sensore, etichetta, unitaMisura){
-    let dato_attuale = dati[sensore]["dato_richiesto"][dati[sensore]["dato_richiesto"].length - 1]
-    document.getElementById("valoreAttuale").innerHTML = (Math.round(dato_attuale*10)/10) + unitaMisura;
+function visualizzaDati(sensore, etichetta, unitaMisura, dati_da_rappresentare){
+    document.getElementById("valoreAttuale").innerHTML = (Math.round(dati[sensore]*10)/10) + unitaMisura;
     //formato = 2021/6/5 15.10.7
     //Questa funzione ritorna un array contenete i valori che devo rappresentare nel grafico
-    var dati_necessari = opzioneSelezionata(dati[sensore]["data_ora_stazione"]);
 
-    const labels = dati_necessari;
+    const labels = dati_da_rappresentare;
     const data = {
-        labels: dati_necessari,
+        labels: dati_da_rappresentare["data_ora"],
         datasets: [{
           label: etichetta,
           backgroundColor: 'rgb(255,140,20)',
           
-          data: trovaDatiNecessari(sensore, dati_necessari.length),
+          data: dati_da_rappresentare["dato_richiesto"],
           borderColor: function(context) {
             const chart = context.chart;
             const {ctx, chartArea} = chart;
@@ -192,116 +246,25 @@ function getGradient(ctx, chartArea) {
 }
 
 //Controllo quale delle seguenti opzioni e selezionati e ritorno l'array contentente di dati che mi interessano
-function opzioneSelezionata(dati_sensori){
+function opzioneSelezionata(sensore, unitaMisura){
     var opzione = document.getElementById("arco_temporale").value;
-    var mese = ricavaMese(dati_sensori);
+    var c;
     if(opzione == "optgiorno"){
-        var oggi = dati_sensori[dati_sensori.length-1].split(" ")[0];
-        return dati_sensori.filter(dato => dato.startsWith(oggi)).map(dato => dato.split(" ")[1]);
+       ottieniDatiGiornalieri(sensore, unitaMisura);
     }
     else if(opzione == "optmese"){
-        return (mese.filter(dato => dato.split("-")[1]==dati_sensori[dati_sensori.length-1].split("-")[1])).map(dato => dato.split(" ")[0].split("-")[2]+"-"+dato.split("-")[1]);
-    }
+        ottieniDatiMensili(sensore, unitaMisura);
+        }
     else {
-        return ricavaAnno(mese).map(dato => dato.split("-")[1]+"-"+dato.split("-")[0]);
+        ottieniDatiAnnuali(sensore, unitaMisura);
     }
-}
-//Ricava tutti i mesi dei dati
-function ricavaAnno(mese){
-    dati_mensili = []
-    if(mese.length > 0){dati_mensili.push(mese[0]);}
-    for(let a = 0; a < mese.length; a++){
-        if(mese[a].split("-")[1]!=dati_mensili[dati_mensili.length-1].split("-")[1]){
-            dati_mensili.push(mese[a]);
-        }
-    }
-    return dati_mensili;
-}
-
-//Ricava tutti i giorni del mese che sono stati registrati
-function ricavaMese(dati_sensori){
-    dati_finali = [];
-    if(dati_sensori>=0){dati_finali.push(dati_sensori[0].split(" ")[0]);}
-    for(let a = 0; a < dati_sensori.length; a++){
-        if((dati_sensori[a].startsWith(dati_finali[dati_finali.length-1]))==false){
-            dati_finali.push(dati_sensori[a].split(" ")[0]);
-        }
-    }
-    return dati_finali;
-}
-
-//Trova i dati necessari in base al tipo di grafico che è stato selezionato
-function trovaDatiNecessari(sensore, n_dati_necessari){
-    var opzione = document.getElementById("arco_temporale").value;
-    
-    if(opzione == "optgiorno"){
-        return dati[sensore]["dato_richiesto"].filter(dato => dati[sensore]["dato_richiesto"].indexOf(dato) >= dati[sensore]["dato_richiesto"].length-n_dati_necessari);
-    }
-    else if(opzione == "optmese"){
-        dati_finali = calcolaMediaGiornaliera(sensore);
-        return dati_finali.filter(dato => dati_finali.indexOf(dato) >= dati_finali.length - n_dati_necessari);
-    }
-    else {
-        return dati_finali = calcolaMediaMensile(sensore);
-    }
-}
-
-//Calcola la media giornaliera dei dati
-function calcolaMediaGiornaliera(sensore){
-    let somma = 0;
-    let substringIniziale = "";
-    let indice = 0;
-    if (dati[sensore]["dato_richiesto"].length >=0){
-        substringIniziale = dati[sensore]["data_ora_stazione"][0].split(" ")[0];
-    }
-    dati_finali = []
-    for(let a = 0; a < dati[sensore]["dato_richiesto"].length; a++){
-        if(dati[sensore]["data_ora_stazione"][a].startsWith(substringIniziale)){
-            indice++;
-            somma +=dati[sensore]["dato_richiesto"][a];
-        }
-        else{
-            dati_finali.push(somma/indice);
-            indice = 0;
-            somma = 0;
-            substringIniziale = dati[sensore]["data_ora_stazione"][a].split(" ")[0];
-        }
-    }
-    dati_finali.push(somma/indice);
-    return dati_finali;
-}
-
-//Calcola la media mensile dei dati
-function calcolaMediaMensile(sensore){
-    let somma = 0;
-    let substringIniziale = "";
-    let indice = 0;
-    if (dati[sensore]["dato_richiesto"].length >=0){
-        substringIniziale = dati[sensore]["data_ora_stazione"][0].split("-")[1];
-    }
-    dati_finali = []
-    for(let a = 0; a < dati[sensore]["dato_richiesto"].length; a++){
-        if(dati[sensore]["data_ora_stazione"][a].split("-")[1] == substringIniziale){
-            indice++;
-            somma +=dati[sensore]["dato_richiesto"][a];
-        }
-        else{
-            console.log("Aggiungo il dato : " +somma)
-            dati_finali.push(somma/indice);
-            indice = 0;
-            somma = 0;
-            substringIniziale = dati[sensore]["data_ora_stazione"][a].split("-  ")[1];
-        }
-    }
-    dati_finali.push(somma/indice);
-    return dati_finali;
 }
 
 /*------------------------------------------------------------------------------------------ */
 
 /*------------------FUNZIONI CHE COLORANO E DECOLORANO LE ICONE------------------------------*/
 function coloraIcona(nome){
-    var img = document.getElementById("img_"+nome).src = "/static/img/"+nome+"_red.png";
+    var img = document.getElementById("img_"+nome).src = "/static/img/"+nome+"_arancione.png";
 }
 
 function decoloraIcona(nome){
@@ -323,6 +286,32 @@ function cambiaModelloImmagineGiroscopio(id_mostra, id_nascosto){
 /*------------------------------------------------------------------------------------------ */
 
 function calcolaPercorso(numero_stazione){
-    percorso = "/stazioni-meteorologiche/"+numero_stazione+"/"
+    percorso = "/stazione-meteorologica/"+numero_stazione+"/"
     console.log(numero_stazione);
+}
+
+
+function disegnaBarraOrizzontale(stringaListaSensori, id_della_stazione_meteorologica, eIndex){
+    //I sensori sono separati dalla ,
+    lista_sensori = stringaListaSensori.split(",");
+
+    testo_html = "<nav class=\"menu-visibility\"><ul>"+
+    "<li><a class=\"submenu\" href=\"/stazione-meteorologica/"+id_della_stazione_meteorologica+"/html/index\""+
+    "onmousemove=\"coloraIcona('home')\" onmouseleave=\"decoloraIcona('home')\">"+
+        "<img id=img_home src=\"/static/img/home.png\" class = \"icon_sensori\"></a>";
+    
+    if(eIndex){
+        testo_html += " <ul><li><a href=\"#chi\">Chi siamo</a></li><li><a href=\"#dati\">Dati in tempo reale</a></li><li><a href=\"#scarica_dati\">Scarica i dati</a></li>"+		
+                    "<li><a href=\"#dove\">Dove si trova</a></li><li><a href=\"#contatti\">Contatti utili</a></li></ul>";
+    }
+
+    testo_html += "</li>";
+
+    for (let a = 0; a < lista_sensori.length; a++){
+        testo_html +=  "<li ><a href="+lista_sensori[a]+" onmousemove=\"coloraIcona('"+lista_sensori[a]+"')\" onmouseleave=\"decoloraIcona('"+lista_sensori[a]+"')\">"+
+        "<img id=\"img_"+lista_sensori[a]+"\" src=\"/static/img/"+lista_sensori[a]+".png\" class = \"icon_sensori\"></a></li>";
+    }
+
+    testo_html += "</ul></nav>"
+    document.getElementById("divSensori").innerHTML = testo_html;
 }
