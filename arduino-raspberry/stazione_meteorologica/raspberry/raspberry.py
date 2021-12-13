@@ -52,8 +52,8 @@ print(dir_path)
 # ------------------------ #
 
 #   ACCESSO ACCOUNT MEGA   #
-email = "..."
-password = "..."
+email = ""
+password = ""
 # ------------------------ #
 
 #      FILE PER ERRORI     #
@@ -78,9 +78,9 @@ SERVER_PORT = 80
 # ------------------------ #
 
 #           EMAIL          #
-GMAILADDRESS = "..."
-GMAILPASSWORD = "..."
-MAILTO = "..."
+GMAILADDRESS = ""
+GMAILPASSWORD = ""
+MAILTO = ""
 
 fist_time_arduino_disconnected = False
 # ------------------------ #

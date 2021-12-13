@@ -47,8 +47,8 @@ gestione_comandi = threading.Thread()
 # ------------------------ #
 
 #   ACCESSO ACCOUNT MEGA   #
-email = "..."
-password = "..."
+email = ""
+password = ""
 # ------------------------ #
 
 #          SOCKET          #
@@ -225,11 +225,10 @@ class RaggruppamentoDati(threading.Thread):
 
             with blocco_thread:
 
+                conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
+                cur = conn.cursor()
+
                 try:
-
-                    conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
-                    cur = conn.cursor()
-
                     data = str(datetime.datetime.utcnow())
                     giorno_att = data.split(" ")[0].split("-")[2]
                     mese_att = data.split(" ")[0].split("-")[1]
@@ -355,11 +354,13 @@ class RaggruppamentoDati(threading.Thread):
                         giorno_prec = giorno_att
                         mese_prec = mese_att
 
-
                 except:
                     file_info_error.error("error in extract data from database")
+                    
 
                 conn.close()
+
+                    
             
             time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
 
