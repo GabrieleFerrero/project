@@ -265,7 +265,7 @@ class RaggruppamentoDati(threading.Thread):
                         for row in cur.execute(f"SELECT * FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_att}-%\""): # acquisisco i dati solo del giorno
                             dict_dati_mensili["data_giorno"].append(row[1])
                             for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                dict_dati_mensili[tipo_sensore].append(row[numero_sensore+1])
+                                dict_dati_mensili[tipo_sensore].append(row[numero_sensore+2])
 
                         dati_raggruppati_mensili[n] = dict_dati_mensili.copy()
 
