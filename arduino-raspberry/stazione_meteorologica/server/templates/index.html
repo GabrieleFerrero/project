@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kodchasan:wght@200&family=Unica+One&display=swap" rel="stylesheet"> 
-      
     <style>
     body {
         margin:0;
@@ -228,6 +227,13 @@
     .tdDove{
         text-align: center;
     }
+    .btnScarica{
+        background-color: #FFD666;
+        font-family: 'Kodchasan', sans-serif;
+        border-radius: 0.2rem;
+        border-width: 0ch;
+        cursor:pointer;
+    }
             
     </style>
 </head>
@@ -261,10 +267,27 @@
         </div>
 
         <div id="scarica_dati"><br><h1>Scarica i nostri dati</h1>
-            <p>È possibile scaricare il database dove sono presenti tutte le misurazioni nel corso dell'anno, di tutte
-                le stazioni meteorologiche in funzione, cliccando <a href="/stazioni-meteorologiche/download">qui</a>.
-                
+            <p>È possibile scaricare i dati dove sono presenti tutte le misurazioni, di questa
+                stazione meteorologica.</p>
+            <div style="text-align: center;">
+                <input class="btnScarica" id="btnScarica1" type="button" value="scarica i dati giornalieri"
+                onmousemove="coloraButton('btnScarica1')" onmouseleave="decoloraButton('btnScarica1')"
+                onclick="location.href='http\://progettiamo.duckdns.org:4000/stazioni-meteorologiche/download/{{dati_della_stazione_meteorologica[1]}}/dati_giornalieri'">
+                <input class="btnScarica" id="btnScarica2" type="button" value="scarica i dati mensili"
+                onmousemove="coloraButton('btnScarica2')" onmouseleave="decoloraButton('btnScarica2')"
+                onclick="location.href='http\://progettiamo.duckdns.org:4000/stazioni-meteorologiche/download/{{dati_della_stazione_meteorologica[1]}}/dati_mensili'">
+                <input class="btnScarica" id="btnScarica3" type="button" value="scarica i dati annuali"
+                onmousemove="coloraButton('btnScarica3')" onmouseleave="decoloraButton('btnScarica3')"
+                onclick="location.href='http\://progettiamo.duckdns.org:4000/stazioni-meteorologiche/download/{{dati_della_stazione_meteorologica[1]}}/dati_annuali'">              
+            </div>
+            <p>
+                Da tenere presente che all'interno dei dati giornalieri sono presenti tutti 
+                i dati rilevati, all'interno dei dati mensili sono presenti le medie giornaliere
+                di tutti i giorni dell'anno e all'interno dei dati annuali sono presenti le medie
+                mensili.
             </p>
+                
+            
             <p id="ora_dati"></p>
             <table id="tblSensori">
             </table>

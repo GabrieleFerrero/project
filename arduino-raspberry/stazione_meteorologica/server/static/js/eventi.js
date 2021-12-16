@@ -177,9 +177,9 @@ function eliminaDatiErrore(dati_sensori){
         }
     }
 
-    for(let a = 0; a < dati_da_eliminare.length;a++){
-        dati_sensori["dato_richiesto"].splice(a, 1);
-        dati_sensori["data_ora"].splice(a, 1);
+    for(let a = 0; a < dati_da_eliminare.length; a++){
+        dati_sensori["dato_richiesto"].splice(dati_da_eliminare[a]-a, 1);
+        dati_sensori["data_ora"].splice(dati_da_eliminare[a]-a, 1);
     }
     return dati_sensori;
 }
@@ -315,3 +315,15 @@ function disegnaBarraOrizzontale(stringaListaSensori, id_della_stazione_meteorol
     testo_html += "</ul></nav>"
     document.getElementById("divSensori").innerHTML = testo_html;
 }
+
+
+/*------------------FUNZIONI CHE COLORANO E DECOLORANO I PULSANTI PER SCARICARE IL CODICE------------------------------*/
+function coloraButton(id){
+    document.getElementById(id).style.fontWeight = "bold";
+    document.getElementById(id).style.backgroundColor = "#FF9115";
+}
+function decoloraButton(id){
+    document.getElementById(id).style.fontWeight = "normal";
+    document.getElementById(id).style.backgroundColor = "#FFD666";
+}
+/*------------------------------------------------------------------------------------------------------------------ */

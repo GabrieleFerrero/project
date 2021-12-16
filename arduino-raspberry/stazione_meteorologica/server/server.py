@@ -17,6 +17,7 @@
 
 """ _______________________INCLUSIONE LIBRERIE________________________"""
 
+from logging import NOTSET
 from flask import Flask, render_template, jsonify, send_file
 import threading
 from pathlib import Path
@@ -28,6 +29,7 @@ from mega import Mega
 import datetime
 import os
 import subprocess
+import pandas as pd
 
 """ //////////////////////////////////////////////////////////////// """
 
@@ -40,6 +42,7 @@ SECONDI_TRA_AGGIORNAMENTO_DATI = 60*1
 
 #          THREAD          #
 blocco_thread = threading.Lock()
+convertitore_db_a_csv = threading.Thread()
 ottenimento_dati = threading.Thread()
 raggruppamento_dati = threading.Thread()
 eliminazione_dati_vecchi = threading.Thread()
@@ -70,6 +73,7 @@ file_info_error= logzero.setup_logger(name='file_info_error', logfile=f"{dir_pat
 stazioni_elenco_ID = []
 stazioni_sensori = {}
 stazioni_address = {}
+stazioni_lock_csv = {}
 # ------------------------ #
 
 #     OPZIONI POSSIBILI    #
@@ -126,17 +130,64 @@ def inviaDato(numero_stazione, tipo, dato_richiesto):
         else:
             return render_template("dato_non_trovato.html")
     except:
-        file_info_error.error("error web page")
+        file_info_error.error("data request error")
         return render_template("pagina_di_errore.html")
 
-@app.route("/stazioni-meteorologiche/download")
-def download():
-    return send_file(f"{dir_path}/database/dati_sensori_stazioni.db", as_attachment=True)
+@app.route("/stazioni-meteorologiche/download/<numero_stazione>/<tipo_tabella>")
+def download(numero_stazione, tipo_tabella):
+    try:
+        numero_stazione = int(numero_stazione)
+        if numero_stazione in stazioni_elenco_ID and tipo_tabella in altre_opzioni[1:]:
+            while stazioni_lock_csv[numero_stazione].locked():
+                pass
+
+            if tipo_tabella == altre_opzioni[1]:
+                return send_file(f"{dir_path}/csv/dati_sensori_giornalieri_{numero_stazione}.csv", as_attachment=True)
+            elif tipo_tabella == altre_opzioni[2]:
+                return send_file(f"{dir_path}/csv/dati_sensori_mensili_{numero_stazione}.csv", as_attachment=True)
+            elif tipo_tabella == altre_opzioni[3]:
+                return send_file(f"{dir_path}/csv/dati_sensori_annuali_{numero_stazione}.csv", as_attachment=True)
+    except:
+        file_info_error.error("error download csv")
+        return render_template("pagina_di_errore.html")
     
 
 """ //////////////////////////////////////////////////////////////// """
 
 """ _________________SPECIALIZZAZIONI CLASSI THREAD_________________ """
+
+class ConvertitoreDBaCSV(threading.Thread):
+    """
+    Questo thread permette di convertire tabelle di un database in formato csv
+    """
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.running = True
+
+    def run(self):
+        while self.running:
+
+            with blocco_thread:
+
+                conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", isolation_level=None, detect_types=sqlite3.PARSE_COLNAMES)
+
+                try:
+                    for n in stazioni_elenco_ID:
+                        with stazioni_lock_csv[n]:
+                            db_df = pd.read_sql_query(f"SELECT * FROM dati_stazione_{n}", conn)
+                            db_df.to_csv(f"{dir_path}/csv/dati_sensori_giornalieri_{n}.csv", index=False)
+                            db_df = pd.read_sql_query(f"SELECT * FROM media_giorni_dati_stazione_{n}", conn)
+                            db_df.to_csv(f"{dir_path}/csv/dati_sensori_mensili_{n}.csv", index=False)
+                            db_df = pd.read_sql_query(f"SELECT * FROM media_mesi_dati_stazione_{n}", conn)
+                            db_df.to_csv(f"{dir_path}/csv/dati_sensori_annuali_{n}.csv", index=False)
+                except:
+                    file_info_error.error("error in the conversion from database to CSV")
+
+                conn.close()
+
+            time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
+
+
 
 class OttenimentoDati(threading.Thread):
     """
@@ -156,9 +207,10 @@ class OttenimentoDati(threading.Thread):
                 conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
                 cur = conn.cursor()
 
-                for n in stazioni_elenco_ID:   
+                try:
 
-                    try:
+                    for n in stazioni_elenco_ID:   
+                        
                         dict_ricevuto = eval(requests.get(f"{stazioni_address[n]}/stazione-meteorologica/dato/sensori-attuali").text) # richiesta di invio dati
                         # anche se ci sono degli / di troppo tra stazioni_address[n] e link della risorsa non importa
 
@@ -180,7 +232,13 @@ class OttenimentoDati(threading.Thread):
                         sql = f"INSERT INTO dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{data_ora_server}\",\"{data_ora_stazione}\","
 
                         for nome_sensore in stazioni_sensori[n]:
-                            sql += f"{dict_ricevuto[nome_sensore]},"
+                            dato = 9999.9
+                            try:
+                                dato = dict_ricevuto[nome_sensore]
+                            except:
+                                print("aggiungere sensore nel file di configurazione del raspberry")
+
+                            sql += f"{dato},"
 
                         sql = sql[:-1]
                         sql += ")"
@@ -188,12 +246,10 @@ class OttenimentoDati(threading.Thread):
                         cur.execute(sql)
                         
                         conn.commit()
-                        
-                        time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
 
-                    except:
-                        file_info_error.error("error in saving data on database")
-
+                except:
+                    file_info_error.error("error in saving data on database")
+                
                 conn.close()
 
             time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
@@ -228,7 +284,7 @@ class RaggruppamentoDati(threading.Thread):
                 conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
                 cur = conn.cursor()
 
-                try:
+                try:                    
                     data = str(datetime.datetime.utcnow())
                     giorno_att = data.split(" ")[0].split("-")[2]
                     mese_att = data.split(" ")[0].split("-")[1]
@@ -249,7 +305,10 @@ class RaggruppamentoDati(threading.Thread):
                         for row in cur.execute(f"SELECT * FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_att} %:%:%.%\""): # acquisisco i dati solo del giorno
                             dict_dati_giornalieri["data_ora_stazione"].append(row[2])
                             for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                dict_dati_giornalieri[tipo_sensore].append(row[numero_sensore+3])  # +3 perché salto l'id + le due date
+                                if row[numero_sensore+3] == None:
+                                    dict_dati_giornalieri[tipo_sensore].append(9999.9)
+                                else:
+                                    dict_dati_giornalieri[tipo_sensore].append(row[numero_sensore+3])  # +3 perché salto l'id + le due date
 
                         dati_raggruppati_giornalieri[n] = dict_dati_giornalieri.copy()
 
@@ -265,7 +324,10 @@ class RaggruppamentoDati(threading.Thread):
                         for row in cur.execute(f"SELECT * FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_att}-%\""): # acquisisco i dati solo del giorno
                             dict_dati_mensili["data_giorno"].append(row[1])
                             for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                dict_dati_mensili[tipo_sensore].append(row[numero_sensore+2])
+                                if row[numero_sensore+2] == None:
+                                    dict_dati_mensili[tipo_sensore].append(9999.9)
+                                else:
+                                    dict_dati_mensili[tipo_sensore].append(row[numero_sensore+2])
 
                         dati_raggruppati_mensili[n] = dict_dati_mensili.copy()
 
@@ -281,7 +343,10 @@ class RaggruppamentoDati(threading.Thread):
                         for row in cur.execute(f"SELECT * FROM media_mesi_dati_stazione_{n}"):
                             dict_dati_annuali["data_mese"].append(row[1])
                             for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                dict_dati_annuali[tipo_sensore].append(row[numero_sensore+2])
+                                if row[numero_sensore+2] == None:
+                                    dict_dati_annuali[tipo_sensore].append(9999.9)
+                                else:
+                                    dict_dati_annuali[tipo_sensore].append(row[numero_sensore+2])
 
                         dati_raggruppati_annuali[n] = dict_dati_annuali.copy()
 
@@ -292,6 +357,7 @@ class RaggruppamentoDati(threading.Thread):
                         # --------------------------------------------------------------- #
                         
                         if giorno_att != giorno_prec:
+                            sql = ""
                             if mese_att != mese_prec:
                                 # devo estrarre i dati dalla tabella di media mesi e fare la media
                                 dict_media_dati_annuali = {}
@@ -299,7 +365,7 @@ class RaggruppamentoDati(threading.Thread):
                                 dict_media_dati_annuali["data_mese"] = f"{anno_att}-{mese_prec}"
 
                                 for tipo_sensore in stazioni_sensori[n]:
-                                    for row in cur.execute(f"SELECT avg(media_giorni_dati_stazione_{n}.{tipo_sensore}) FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_prec}-%\" and media_giorni_dati_stazione_{n}.{tipo_sensore} != 9999.9 and media_giorni_dati_stazione_{n}.{tipo_sensore} != 8888.8"):
+                                    for row in cur.execute(f"SELECT avg(media_giorni_dati_stazione_{n}.{tipo_sensore}) FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_prec}-%\" and media_giorni_dati_stazione_{n}.{tipo_sensore} != 9999.9 and media_giorni_dati_stazione_{n}.{tipo_sensore} != 8888.8 and media_giorni_dati_stazione_{n}.{tipo_sensore} NOT NULL"):
                                         if row[0] == None: dict_media_dati_annuali[tipo_sensore] = 9999.9
                                         else: dict_media_dati_annuali[tipo_sensore] = row[0]
 
@@ -316,9 +382,6 @@ class RaggruppamentoDati(threading.Thread):
 
                                 sql = sql[:-1]
                                 sql += ")"
-                                
-                                cur.execute(sql)
-                                conn.commit()
 
                             else: # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                                 
@@ -327,11 +390,11 @@ class RaggruppamentoDati(threading.Thread):
                                 dict_media_dati_mensili["data_giorno"] = f"{anno_att}-{mese_att}-{giorno_prec}"
 
                                 for tipo_sensore in stazioni_sensori[n]:
-                                    for row in cur.execute(f"SELECT avg(dati_stazione_{n}.{tipo_sensore}) FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_prec} %:%:%.%\" and dati_stazione_{n}.{tipo_sensore} != 9999.9 and dati_stazione_{n}.{tipo_sensore} != 8888.8"):
+                                    for row in cur.execute(f"SELECT avg(dati_stazione_{n}.{tipo_sensore}) FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_prec} %:%:%.%\" and dati_stazione_{n}.{tipo_sensore} != 9999.9 and dati_stazione_{n}.{tipo_sensore} != 8888.8 and dati_stazione_{n}.{tipo_sensore} NOT NULL"):
                                         if row[0] == None: dict_media_dati_mensili[tipo_sensore] = 9999.9
                                         else: dict_media_dati_mensili[tipo_sensore] = row[0]
 
-                             
+                                
                                 # inserire i dati nel database
 
                                 nomi_colonne = "data_giorno,"
@@ -346,21 +409,16 @@ class RaggruppamentoDati(threading.Thread):
                                 sql = sql[:-1]
                                 sql += ")"
                                 
-                                cur.execute(sql)
-                                conn.commit()
-                                
-
+                            cur.execute(sql)
+                            conn.commit()
                         
                         giorno_prec = giorno_att
                         mese_prec = mese_att
 
                 except:
                     file_info_error.error("error in extract data from database")
-                    
 
-                conn.close()
-
-                    
+                conn.close()                    
             
             time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
 
@@ -414,8 +472,11 @@ class EliminazioneDatiVecchi(threading.Thread):
                     except:
                         file_info_error.error("error in the EliminazioneDatiVecchi thread")
 
-                    # ricreo il database
-                    inizializzazioneStazioniMeteorologiche()
+                    try:
+                        # ricreo il database
+                        inizializzazioneStazioniMeteorologiche()
+                    except:
+                        file_info_error.error("database creation error")
                     
             parametro_backup_precedente = parametro_backup
             time.sleep(60)  
@@ -468,7 +529,7 @@ class GestioneComandi(threading.Thread):
                     print("Tempo scaduto\n")
             elif comando == "help":
                 print("\nCOMANDI:\n")
-                print("- refresh --> serve per aggiornare il server quando si aggiungono nuove stazioni meteorologiche\n")
+                print("- refresh --> serve per aggiornare il server quando si aggiungono nuove stazioni meteorologiche o si modificano i dati\n")
                 print("- delete:ID --> serve per eliminare dal server una stazione con l'ID specificato\n")
                 print("- list --> serve per mostrare la lista degli id delle stazioni meteorologiche attive \n")
                 print("- data --> serve per mostrare i dati che il server sa sulle stazioni meteorologiche\n")
@@ -492,10 +553,12 @@ def inizializzazioneStazioniMeteorologiche():
     global stazioni_elenco_ID
     global stazioni_sensori
     global stazioni_address
+    global stazioni_lock_csv
 
     stazioni_elenco_ID = []
     stazioni_sensori = {}
     stazioni_address = {}
+    stazioni_lock_csv = {}
     
     id = -1
 
@@ -520,7 +583,9 @@ def inizializzazioneStazioniMeteorologiche():
                     # estrazione address_stazione
                     stazioni_address[id] = righe[2].replace("\n","")
 
-                    # creazione tabella contenente dati sensori
+                    stazioni_lock_csv[id] = threading.Lock()
+
+                    # creazione tabella contenente dati sensori -------------------------------------------------------------
                     stringa_creazione_tabella = f"CREATE TABLE if not exists \"dati_stazione_{id}\" (\"ID_misurazioni\" INTEGER NOT NULL, \"data_ora_server\" TEXT, \"data_ora_stazione\" TEXT, "
                     
 
@@ -529,10 +594,22 @@ def inizializzazioneStazioniMeteorologiche():
 
                     stringa_creazione_tabella += "PRIMARY KEY(\"ID_misurazioni\" AUTOINCREMENT))"
                     cur.execute(stringa_creazione_tabella)
+                    
+                    con.commit()
+
+                    # verifica aggiunta di nuovi sensori
+
+                    cursor = con.execute(f'select * from dati_stazione_{id}')
+                    names = [description[0] for description in cursor.description]
+
+                    diff = list(set(stazioni_sensori[id]) - set(names))
+
+                    for ns in diff:
+                        cur.execute(f"ALTER TABLE dati_stazione_{id} ADD COLUMN {ns} REAL")
 
                     con.commit()
 
-                    # creazione tabella contenente media giorni sensori
+                    # creazione tabella contenente media giorni sensori ---------------------------------------------------
                     stringa_creazione_tabella = f"CREATE TABLE if not exists \"media_giorni_dati_stazione_{id}\" (\"ID_media_giorno\" INTEGER NOT NULL, \"data_giorno\" TEXT, "
                     
 
@@ -544,7 +621,19 @@ def inizializzazioneStazioniMeteorologiche():
 
                     con.commit()
 
-                    # creazione tabella contenente media mese sensori
+                    # verifica aggiunta di nuovi sensori
+
+                    cursor = con.execute(f'select * from media_giorni_dati_stazione_{id}')
+                    names = [description[0] for description in cursor.description]
+
+                    diff = list(set(stazioni_sensori[id]) - set(names))
+
+                    for ns in diff:
+                        cur.execute(f"ALTER TABLE media_giorni_dati_stazione_{id} ADD COLUMN {ns} REAL")
+
+                    con.commit()
+
+                    # creazione tabella contenente media mese sensori -------------------------------------------------------
                     stringa_creazione_tabella = f"CREATE TABLE if not exists \"media_mesi_dati_stazione_{id}\" (\"ID_media_mese\" INTEGER NOT NULL, \"data_mese\" TEXT, "
                     
 
@@ -553,6 +642,18 @@ def inizializzazioneStazioniMeteorologiche():
 
                     stringa_creazione_tabella += "PRIMARY KEY(\"ID_media_mese\" AUTOINCREMENT))"
                     cur.execute(stringa_creazione_tabella)
+
+                    con.commit()
+
+                    # verifica aggiunta di nuovi sensori
+
+                    cursor = con.execute(f'select * from media_mesi_dati_stazione_{id}')
+                    names = [description[0] for description in cursor.description]
+
+                    diff = list(set(stazioni_sensori[id]) - set(names))
+
+                    for ns in diff:
+                        cur.execute(f"ALTER TABLE media_mesi_dati_stazione_{id} ADD COLUMN {ns} REAL")
 
                     con.commit()
 
@@ -570,6 +671,10 @@ def inizializzazioneStazioniMeteorologiche():
 def main():
 
     inizializzazioneStazioniMeteorologiche()
+
+    global convertitore_db_a_csv
+    convertitore_db_a_csv = ConvertitoreDBaCSV()
+    convertitore_db_a_csv.start()
 
     global ottenimento_dati
     ottenimento_dati = OttenimentoDati()

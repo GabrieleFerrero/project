@@ -122,13 +122,13 @@ class ScattaFoto(threading.Thread):
                 
                 print("scatto foto")
                 # SCATTA FOTO
-                subprocess.run(["fswebcam", "-r", "1280x720", "--no-banner", f"{dir_path}/foto/foto.png"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(["fswebcam", "-r", "1280x720", "--no-banner", f"{dir_path}/foto/foto.jpg"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
                 # MACHINE LEARNING SU FOTO
                 nome_foto = getNomeFoto(machineLearning())
 
                 # RINOMINAZIONE DELLA FOTO
-                subprocess.run(["mv", f"{dir_path}/foto/foto.png", f"{dir_path}/foto/{nome_foto}"])
+                subprocess.run(["mv", f"{dir_path}/foto/foto.jpg", f"{dir_path}/foto/{nome_foto}"])
             except:
                 file_info_error.error("photo capture error or machine learning error")
 
@@ -169,7 +169,7 @@ def machineLearning():
         # determined by the first position in the shape tuple, in this case 1.
         data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
         # Replace this with the path to your image
-        image = Image.open(f"{dir_path}/foto/foto.png")
+        image = Image.open(f"{dir_path}/foto/foto.jpg")
         #resize the image to a 224x224 with the same strategy as in TM2:
         #resizing the image to be at least 224x224 and then cropping from the center
         size = (224, 224)
@@ -201,7 +201,7 @@ def machineLearning():
 
 def getNomeFoto(oggetto_fotografato):
     data_ora_corrente = datetime.datetime.utcnow()
-    return f"{data_ora_corrente}_({oggetto_fotografato})_[{id_stazione}].png"
+    return f"{data_ora_corrente}_({oggetto_fotografato})_[{id_stazione}].jpg"
 
 # ------------------------------------------------------- #
 
