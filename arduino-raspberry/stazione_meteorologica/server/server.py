@@ -118,15 +118,27 @@ def inviaPagina(numero_stazione, pagina_richiesta):
 def inviaDato(numero_stazione, tipo, dato_richiesto):
     try:
         numero_stazione = int(numero_stazione)
-        if numero_stazione in stazioni_elenco_ID and (dato_richiesto in stazioni_sensori[numero_stazione] or dato_richiesto == "generico")and tipo in altre_opzioni:
+        if numero_stazione in stazioni_elenco_ID and (dato_richiesto in stazioni_sensori[numero_stazione] or dato_richiesto == "tutti")and tipo in altre_opzioni:
             if tipo == altre_opzioni[0]:
-                return jsonify(dati_raggruppati_attuali[numero_stazione])
+                if dato_richiesto == "tutti":
+                    return jsonify(dati_raggruppati_attuali[numero_stazione])
+                else:
+                    return jsonify({"data_ora":dati_raggruppati_attuali[numero_stazione]["data_ora_stazione"], "dato_richiesto": dati_raggruppati_attuali[numero_stazione][dato_richiesto]})
             elif tipo == altre_opzioni[1]:
-                return jsonify({"data_ora":dati_raggruppati_giornalieri[numero_stazione]["data_ora_stazione"],"dato_richiesto":dati_raggruppati_giornalieri[numero_stazione][dato_richiesto]})
+                if dato_richiesto == "tutti":
+                    return jsonify(dati_raggruppati_giornalieri[numero_stazione])
+                else:
+                    return jsonify({"data_ora":dati_raggruppati_giornalieri[numero_stazione]["data_ora_stazione"],"dato_richiesto":dati_raggruppati_giornalieri[numero_stazione][dato_richiesto]})
             elif tipo == altre_opzioni[2]:
-                return jsonify({"data_ora":dati_raggruppati_mensili[numero_stazione]["data_giorno"],"dato_richiesto":dati_raggruppati_mensili[numero_stazione][dato_richiesto]})
+                if dato_richiesto == "tutti":
+                    return jsonify(dati_raggruppati_mensili[numero_stazione])
+                else:
+                    return jsonify({"data_ora":dati_raggruppati_mensili[numero_stazione]["data_giorno"],"dato_richiesto":dati_raggruppati_mensili[numero_stazione][dato_richiesto]})
             elif tipo == altre_opzioni[3]:
-                return jsonify({"data_ora":dati_raggruppati_annuali[numero_stazione]["data_mese"],"dato_richiesto":dati_raggruppati_annuali[numero_stazione][dato_richiesto]})
+                if dato_richiesto == "tutti":
+                    return jsonify(dati_raggruppati_annuali[numero_stazione])
+                else:
+                    return jsonify({"data_ora":dati_raggruppati_annuali[numero_stazione]["data_mese"],"dato_richiesto":dati_raggruppati_annuali[numero_stazione][dato_richiesto]})
         else:
             return render_template("dato_non_trovato.html")
     except:

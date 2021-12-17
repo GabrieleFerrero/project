@@ -4,7 +4,7 @@ var percorso = ""; //più il resto del percorso
 /*creo un dizionario dati che contiene come chiave i nomi dei sensori e come valore gli 
 ultimi dati richiesti al server*/
 var dati = {
-    "generale": "",
+    "tutti": "",
     "temperatura": 0,
     "giroscopio": "0#0#0"
 };
@@ -16,11 +16,11 @@ var canvas_sensori = {
 /*----------------FUNZIONI PER AGGIORNARE I DATI DELLA TABELLA NELLA PAGINA PRINCIPALE---------------- */
 function aggiornaDati() {
     $.ajax({
-        url: percorso+"dato/dati_attuali/generico",
+        url: percorso+"dato/dati_attuali/tutti",
         type: "GET",
         dataType: "json",
         success: function(dati_sensori) {
-            dati["generale"] = dati_sensori;
+            dati["tutti"] = dati_sensori;
             aggiornaPagina(dati_sensori);
             
           }
@@ -158,12 +158,11 @@ function ottieniDatiAnnuali(sensore, unitaMisura){
 
 function ottieniDatoAttuale(sensore) {
     $.ajax({
-        url: percorso+"dato/dati_attuali/generico",
+        url: percorso+"dato/dati_attuali/"+sensore,
         type: "GET",
         dataType: "json",
         success: function(dati_sensori) {
-            dati[sensore] =  dati_sensori[sensore];
-            
+            dati[sensore] =  dati_sensori["dato_richiesto"];
           }
       });
 }
