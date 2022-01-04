@@ -12,11 +12,20 @@ La stampante PCB è gestita nel seguente modo:
 degli assi X, Y e Z. 
 Di seguito sono riportate alcune immagini della stampante:
 
+
+![stampante_pcb](./foto/img_02.jpeg)
+![stampante_pcb](./foto/img_03.jpeg)
+
 ---
 
 ### Interfaccia
 La stampante PCB presenta un'interfaccia web.
-Come si può vedere dall'immagine riportata sotto, a destra sono presenti tutte le funzioni implementate che si possono aggiungere 
+
+
+![interfaccia](./foto/img_05.jpeg)
+
+
+Come si può vedere dall'immagine riportata sopra, a destra sono presenti tutte le funzioni implementate che si possono aggiungere 
 nella parte sinistra con un semplice *click*. Inoltre nella parte in alto a sinistra è presente una sezione che mostra in tempo reale le coordinate 
 della punta e lo stato dei finecorsa e che permette 
 in qualnque momento (anche durante l'esecuzione di un codice) di spostare la punta secondo le coordinate che sono state date o di 
@@ -26,12 +35,12 @@ in qualnque momento (anche durante l'esecuzione di un codice) di spostare la pun
 Sono anche presenti i seguenti pulsanti:
 | Immagine | Significato del pulsante |Descrizione della funzione |
 | :-------- | :------- | :------------------------- |
-| | `Esegui codice` | Serve per far eseguire il codice presente a sinistra |
-| | `Pausa` | Serve per fermare temporaneamente il codice, facendo rimanere il programma bloccato al punto in cui è stato interrotto |
-| | `Riprendi esecuzione` | Serve per far riprende l'esecuzione del porgramma dopo aver premuto su `Pausa` |
-| | `Termina esecuzione` | Serve per terminare in modo definitivo il programma in esecuzione |
-| | `Scarica codice` | Serve per scaricare il codice che è stato scritto in formato `txt` |
-| | `Sfoglia` | Serve caricare un codice (valido) in formato `txt` |
+| ![esegui](./foto/img_06.jpeg)| `Esegui codice` | Serve per far eseguire il codice presente a sinistra |
+| ![pausa](./foto/img_07.jpeg)| `Pausa` | Serve per fermare temporaneamente il codice, facendo rimanere il programma bloccato al punto in cui è stato interrotto |
+| ![riprendi](./foto/img_08.jpeg)| `Riprendi esecuzione` | Serve per far riprende l'esecuzione del porgramma dopo aver premuto su `Pausa` |
+| ![termina](./foto/img_09.jpeg)| `Termina esecuzione` | Serve per terminare in modo definitivo il programma in esecuzione |
+|![scarica](./foto/img_10.jpeg) | `Scarica codice` | Serve per scaricare il codice che è stato scritto in formato `txt` |
+| ![sfoglia](./foto/img_11.jpeg)| `Sfoglia` | Serve caricare un codice (valido) in formato `txt` |
 
 Nel momento in cui si avvia l'esecuzione del programma verrà mostrato in tempo reale quale istruzione sta eseguendo e 
 lo stato di ogni istruzione già eseguita.
