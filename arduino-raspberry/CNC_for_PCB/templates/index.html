@@ -97,10 +97,13 @@ body{
             <table class="table table-bordered" style="text-align: center;" id="tbl_posizioni_attuali">
                 <tr id="tr_posizione"></tr>
                 <tr id="tr_vai">
-                    <th colspan="2"><input id="coordx" type="text" placeholder="coord X" size="8"></th>
-                    <th colspan="2"><input id="coordy" type="text" placeholder="coord Y" size="8"></th>
-                    <th colspan="2"><input id="coordz" type="text" placeholder="coord Z" size="8"></th>
-                    <th><input type="button" value="sposta punta" class="btn btn-success" onclick="spostaPunta()"></th>
+                    <th colspan="2"><input id="coordx" type="text" placeholder="coord X" size="6"></th>
+                    <th colspan="2"><input id="coordy" type="text" placeholder="coord Y" size="6"></th>
+                    <th colspan="2"><input id="coordz" type="text" placeholder="coord Z" size="6"></th>
+                    <th><button" title="Sposta punta" onclick="spostaPunta()" class="btn_pulsanti btn-success"><img style="width: 50%; height: auto;" src="/static/img/esegui.png">
+                    </button></th>
+                    <th><button id="btn_setZero" title="scegli questo come 0" onclick="setZero()" class="btn_pulsanti btn-primary"><img style="width: 50%; height: auto;" src="/static/img/zero.png">
+                    </button></th>
                 </tr>
                 <tr id="tr_finecorsa"></tr>
             </table>

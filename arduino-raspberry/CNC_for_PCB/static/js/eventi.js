@@ -280,7 +280,7 @@ function eseguiComandi(){
                 termina = false;
             }
             
-        }, 2000);
+        }, 5000);
 
     }
 }
@@ -330,6 +330,10 @@ function pausaCodice(){
     
 }
 
+function setZero(){
+    get("/comandi/set-zero");
+}
+
 function terminaCodice(){
     termina = true;
     get("/comandi/termina");
@@ -343,7 +347,7 @@ function terminaCodice(){
 function main(dict_comandi){ 
     dizionario_comandi_validi = dict_comandi;
     disegnaCardComandi();
-    setInterval(ottieniPosizioniAttuali, 1000);
+    setInterval(ottieniPosizioniAttuali, 5000);
 }
 
 function disegnaCardComandi(){
@@ -414,7 +418,7 @@ function spostaPunta(){
     document.getElementById("coordz").value = coordz;
 
     if(coordx!= 'NaN' && coordy!= 'NaN' && coordz != 'NaN'){
-        post("/comandi/esegui-punta", "vai_lineare("+coordx+","+coordy+","+coordz+")")
+        post("/comandi/esegui-punta", "vai_incrementale("+coordx+","+coordy+","+coordz+")")
     }
     else{
         alert("Valori non validi!")

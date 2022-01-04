@@ -30,10 +30,16 @@ def ottieni_pagina_di_controllo():
 def ricevi_comandi(azione):
     global lock_pausa
     global lock_termina
+    global stato_assi
     try:
         if azione == "pausa":
             lock_pausa = True
             return("pausa")
+        
+        elif azione == "set-zero":
+            for asse in stato_assi:
+                stato_assi[asse]["stato_asse"] = 0
+            return("set-zero")
         
         elif azione == "termina":
             lock_termina = True
@@ -72,9 +78,6 @@ def ricevi_comandi(azione):
 
                     numero_istruzione = i
 
-                    print(i)
-                    print(lock_pausa)
-
                     comando = comando_ricevuto.split("(")[0]
                     parametri = comando_ricevuto.split("(")[1].replace(")", "").split(",")
 
@@ -100,6 +103,8 @@ def ricevi_comandi(azione):
 
             if lock_esegui_punta.acquire(False):
 
+                copia_stato_assi = stato_assi.copy()
+
                 for comando_ricevuto in comandi_ricevuti.split("\n"):
 
                     comando = comando_ricevuto.split("(")[0]
@@ -109,6 +114,11 @@ def ricevi_comandi(azione):
 
                     comandi_funzioni[comando](parametri, "muovi_motore_senza_lock")
 
+                for asse in copia_stato_assi:
+                    GPIO.output(pins[asse]["pul"], copia_stato_assi[asse]["stato_direzione"])
+
+                if not lock_esegui.locked(): lock_pausa = False
+                    
                 lock_termina = False
                 
                 lock_esegui_punta.release()
@@ -181,8 +191,8 @@ stato_assi["Z_SX"]["stato_finecorsa"] = stato_assi["Z_DX"]["stato_finecorsa"] # 
 
 PAUSA_TRA_IMPULSI = 0.005
 N_PUNTI_ARCO = 100
-ALZA_PUNTA = -3 #sempre negativo
-ABBASSA_PUNTA = 3 #sempre positivo
+ALZA_PUNTA = -500 #sempre negativo
+ABBASSA_PUNTA = 500 #sempre positivo
 #-----------#
 
 def settaggio_motori():
@@ -278,7 +288,17 @@ def muovi_due_motori(comandi, tipo_funzione_muovi_motore):
     
                 
         
-    
+"""
+
+   _____ ____  __  __          _   _ _____ _____ 
+  / ____/ __ \|  \/  |   /\   | \ | |  __ \_   _|
+ | |   | |  | | \  / |  /  \  |  \| | |  | || |  
+ | |   | |  | | |\/| | / /\ \ | . ` | |  | || |  
+ | |___| |__| | |  | |/ ____ \| |\  | |__| || |_ 
+  \_____\____/|_|  |_/_/    \_\_| \_|_____/_____|
+                                                                                             
+
+"""
 
 def vai_incrementale(parametri, tipo_funzione_muovi_motore):
     parametri = [round(float(i)) for i in parametri]
@@ -365,6 +385,15 @@ def collegamento(parametri, tipo_funzione_muovi_motore):
     vai_incrementale([0, 0, ABBASSA_PUNTA], tipo_funzione_muovi_motore)
 
 
+def foro(parametri, tipo_funzione_muovi_motore):
+    parametri = [round(float(i)) for i in parametri]
+
+    profondita = parametri[0]
+
+    vai_incrementale([0,0,profondita], tipo_funzione_muovi_motore)
+    
+
+
 
 
 comandi_parametri = {
@@ -372,15 +401,30 @@ comandi_parametri = {
     "vai_incrementale": ["coordx","coordy","coordz"],
     "arco": ["raggio","angolo_iniziale","angolo_finale"],
     "segmento": ["lunghezza", "inclinazione"],
-    "collegamento": ["lunghezza","larghezza","inclinazione"]
+    "collegamento": ["lunghezza","larghezza","inclinazione"],
+    "foro": ["profondita"]
 }
 comandi_funzioni = {
     "vai_lineare": vai_lineare,
     "vai_incrementale": vai_incrementale,
     "arco": arco,
     "segmento": segmento,
-    "collegamento": collegamento
+    "collegamento": collegamento,
+    "foro": foro
 }
+
+
+"""
+
+  ______ _____ _   _ ______    _____ ____  __  __          _   _ _____ _____ 
+ |  ____|_   _| \ | |  ____|  / ____/ __ \|  \/  |   /\   | \ | |  __ \_   _|
+ | |__    | | |  \| | |__    | |   | |  | | \  / |  /  \  |  \| | |  | || |  
+ |  __|   | | | . ` |  __|   | |   | |  | | |\/| | / /\ \ | . ` | |  | || |  
+ | |     _| |_| |\  | |____  | |___| |__| | |  | |/ ____ \| |\  | |__| || |_ 
+ |_|    |_____|_| \_|______|  \_____\____/|_|  |_/_/    \_\_| \_|_____/_____|
+                                                                             
+                                                                             
+"""
 
 def controllo_finecorsa_asse(asse):
     global stato_assi
