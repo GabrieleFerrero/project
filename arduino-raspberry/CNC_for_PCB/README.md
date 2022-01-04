@@ -3,12 +3,13 @@
 
 In questo progetto abbiamo costruito una stampante PCB.
 
+**Tutte le misurazioni che si utilizzano sono in centesimo di millimetro.**
 
 ### Funzionamento
 
 La stampante PCB è gestita nel seguente modo:
 - un web server esegue i programmi che sono stati inviati da un client, con eventuali priorità, decodificando le istruzioni in movimenti per gli stepmotor
-degli assi X, Y e Z.
+degli assi X, Y e Z. 
 Di seguito sono riportate alcune immagini della stampante:
 
 ---
@@ -32,7 +33,7 @@ Sono anche presenti i seguenti pulsanti:
 | | `Scarica codice` | Serve per scaricare il codice che è stato scritto in formato `txt` |
 | | `Sfoglia` | Serve caricare un codice (valido) in formato `txt` |
 
-Nel momento in cui si avvia l'esecuzione del programma verranno mostrate in tempo reale quale istruzione sta eseguendo e 
+Nel momento in cui si avvia l'esecuzione del programma verrà mostrato in tempo reale quale istruzione sta eseguendo e 
 lo stato di ogni istruzione già eseguita.
 
 ---
@@ -41,11 +42,12 @@ lo stato di ogni istruzione già eseguita.
 Le funzioni base che si possono utilizzare sono:
 | Nome | Parametri | Descrizione |
 | :-------- | :------- | :------------------------- |
-| `vai_lineare` |coordx, coordy, coordz | Sposta la punta alle coordinate assolute indicate come parametro |
-| `vai_incrementale` |coordx, coordy, coordz | Sposta la punta di quanto indicato come parametro |
-| `segmento` |lunghezza, inclinazione | Crea un segmento di lunghezza ed inclinazione indicata |
-| `collegamento` |lunghezza, larghezza, inclinazione | Crea due segmenti paralleli, di lungehzza ed inclinazione indicata, che distano di *larghezza* |
-| `arco` |raggio, angolo_iniziale, angolo_finale | Partendo dal centro crea un arco con i parametri indicati|
+| `vai_lineare` | coordx, coordy, coordz | Sposta la punta alle coordinate assolute indicate come parametro |
+| `vai_incrementale` | coordx, coordy, coordz | Sposta la punta di quanto indicato come parametro |
+| `foro` | profondità | La punta crea un foro, muovendo l'asse Z di quanto indicato |
+| `segmento` | lunghezza, inclinazione | Crea un segmento di lunghezza ed inclinazione indicata |
+| `collegamento` | lunghezza, larghezza, inclinazione | Crea due segmenti paralleli, di lungehzza ed inclinazione indicata, che distano di *larghezza* |
+| `arco` | raggio, angolo_iniziale, angolo_finale | Partendo dal centro crea un arco con i parametri indicati|
 
 ---
 
