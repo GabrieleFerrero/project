@@ -201,7 +201,7 @@ def machineLearning():
 
 def getNomeFoto(oggetto_fotografato):
     data_ora_corrente = datetime.datetime.utcnow()
-    data_ora_corrente = str(data_ora_corrente).replace(":", "")  
+    data_ora_corrente = str(data_ora_corrente).replace(":", "-")  
     return f"{data_ora_corrente}_({oggetto_fotografato})_[{id_stazione}].jpg"
 
 # ------------------------------------------------------- #
