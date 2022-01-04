@@ -460,7 +460,7 @@ class EliminazioneDatiVecchi(threading.Thread):
                     try: 
                         errore = False    
                         
-                        data_ora_corrente = str(data_ora_corrente).replace(":", "")  
+                        data_ora_corrente = str(data_ora_corrente).replace(":", "-")  
                         
                         # rinominazione database
                         subprocess.run(["mv", f"{dir_path}/database/dati_sensori_stazioni.db", f"{dir_path}/database/{data_ora_corrente}.db"])
