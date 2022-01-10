@@ -52,8 +52,8 @@ print(dir_path)
 # ------------------------ #
 
 #   ACCESSO ACCOUNT MEGA   #
-email = ""
-password = ""
+email = "gabrieleferrero.mega@gmail.com"
+password = "Fjdj8227jd"
 # ------------------------ #
 
 #      FILE PER ERRORI     #
@@ -78,9 +78,9 @@ SERVER_PORT = 80
 # ------------------------ #
 
 #           EMAIL          #
-GMAILADDRESS = ""
-GMAILPASSWORD = ""
-MAILTO = ""
+GMAILADDRESS = "raspberry.gabriele@gmail.com"
+GMAILPASSWORD = "Fj472iaap"
+MAILTO = "gabrieleferrero03@gmail.com"
 
 fist_time_arduino_disconnected = False
 # ------------------------ #
@@ -117,9 +117,6 @@ class ScattaFoto(threading.Thread):
         while self.running:
 
             try:
-                # ELIMINAZIONE FOTO PRECEDENTI
-                subprocess.call(f"rm {dir_path}/foto/*", shell=True)
-                
                 print("scatto foto")
                 # SCATTA FOTO
                 subprocess.run(["fswebcam", "-r", "1280x720", "--no-banner", f"{dir_path}/foto/foto.jpg"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -142,6 +139,9 @@ class ScattaFoto(threading.Thread):
                 # SALVATAGGIO FOTO SUL CLOUD
                 folder = m.find('StazioneMeteorologica/foto', exclude_deleted=True)
                 m.upload(f"{dir_path}/foto/{nome_foto}", folder[0])
+
+                subprocess.call(f"rm {dir_path}/foto/*", shell=True)
+                print("foto caricata ed ora la elimino")
 
             except:
                 file_info_error.error("error upload mega")

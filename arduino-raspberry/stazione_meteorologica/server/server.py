@@ -50,8 +50,8 @@ gestione_comandi = threading.Thread()
 # ------------------------ #
 
 #   ACCESSO ACCOUNT MEGA   #
-email = ""
-password = ""
+email = "gabrieleferrero.mega@gmail.com"
+password = "Fjdj8227jd"
 # ------------------------ #
 
 #          SOCKET          #
@@ -181,21 +181,27 @@ class ConvertitoreDBaCSV(threading.Thread):
 
             with blocco_thread:
 
-                conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", isolation_level=None, detect_types=sqlite3.PARSE_COLNAMES)
-
                 try:
-                    for n in stazioni_elenco_ID:
-                        with stazioni_lock_csv[n]:
-                            db_df = pd.read_sql_query(f"SELECT * FROM dati_stazione_{n}", conn)
-                            db_df.to_csv(f"{dir_path}/csv/dati_sensori_giornalieri_{n}.csv", index=False)
-                            db_df = pd.read_sql_query(f"SELECT * FROM media_giorni_dati_stazione_{n}", conn)
-                            db_df.to_csv(f"{dir_path}/csv/dati_sensori_mensili_{n}.csv", index=False)
-                            db_df = pd.read_sql_query(f"SELECT * FROM media_mesi_dati_stazione_{n}", conn)
-                            db_df.to_csv(f"{dir_path}/csv/dati_sensori_annuali_{n}.csv", index=False)
-                except:
-                    file_info_error.error("error in the conversion from database to CSV")
 
-                conn.close()
+                    conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", isolation_level=None, detect_types=sqlite3.PARSE_COLNAMES)
+
+                    try:
+                        for n in stazioni_elenco_ID:
+                            with stazioni_lock_csv[n]:
+                                db_df = pd.read_sql_query(f"SELECT * FROM dati_stazione_{n}", conn)
+                                db_df.to_csv(f"{dir_path}/csv/dati_sensori_giornalieri_{n}.csv", index=False)
+                                db_df = pd.read_sql_query(f"SELECT * FROM media_giorni_dati_stazione_{n}", conn)
+                                db_df.to_csv(f"{dir_path}/csv/dati_sensori_mensili_{n}.csv", index=False)
+                                db_df = pd.read_sql_query(f"SELECT * FROM media_mesi_dati_stazione_{n}", conn)
+                                db_df.to_csv(f"{dir_path}/csv/dati_sensori_annuali_{n}.csv", index=False)
+                    except:
+                        file_info_error.error("error in the conversion from database to CSV")
+
+                    conn.close()
+
+                except:
+                    file_info_error.error("error database thread ConvertitoreDBaCSV")
+
 
             time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
 
@@ -216,53 +222,66 @@ class OttenimentoDati(threading.Thread):
 
             with blocco_thread:
 
-                conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
-                cur = conn.cursor()
-
                 try:
 
-                    for n in stazioni_elenco_ID:   
-                        
-                        dict_ricevuto = eval(requests.get(f"{stazioni_address[n]}/stazione-meteorologica/dato/sensori-attuali").text) # richiesta di invio dati
-                        # anche se ci sono degli / di troppo tra stazioni_address[n] e link della risorsa non importa
+                    conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
+                    cur = conn.cursor()
 
-                        print(f"salvataggio dati_stazione_{n} su database")
+                    try:
 
-                        data_ora_server = str(datetime.datetime.utcnow())
-                        data_ora_stazione = dict_ricevuto["data_ora_stazione"]
+                        for n in stazioni_elenco_ID:  
 
-                        dati_raggruppati_attuali[n] = dict_ricevuto.copy()
+                            continuare = True 
 
-                        del dict_ricevuto["data_ora_stazione"]
-
-                        # CARICAMENTO DATI SU DATABASE
-                        nomi_colonne = "data_ora_server,data_ora_stazione,"
-                        for nome_sensore in stazioni_sensori[n]:
-                            nomi_colonne += f"\"{nome_sensore}\","
-
-
-                        sql = f"INSERT INTO dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{data_ora_server}\",\"{data_ora_stazione}\","
-
-                        for nome_sensore in stazioni_sensori[n]:
-                            dato = 9999.9
                             try:
-                                dato = dict_ricevuto[nome_sensore]
+                                dict_ricevuto = eval(requests.get(f"{stazioni_address[n]}/stazione-meteorologica/dato/sensori-attuali").text) # richiesta di invio dati
+                                # anche se ci sono degli / di troppo tra stazioni_address[n] e link della risorsa non importa
                             except:
-                                print("aggiungere sensore nel file di configurazione del raspberry")
+                                file_info_error.error(f"station number {n} data reception error")
+                                continuare = False
 
-                            sql += f"{dato},"
 
-                        sql = sql[:-1]
-                        sql += ")"
+                            if continuare:
+                                print(f"salvataggio dati_stazione_{n} su database")
 
-                        cur.execute(sql)
-                        
-                        conn.commit()
+                                data_ora_server = str(datetime.datetime.utcnow())
+                                data_ora_stazione = dict_ricevuto["data_ora_stazione"]
+
+                                dati_raggruppati_attuali[n] = dict_ricevuto.copy()
+
+                                del dict_ricevuto["data_ora_stazione"]
+
+                                # CARICAMENTO DATI SU DATABASE
+                                nomi_colonne = "data_ora_server,data_ora_stazione,"
+                                for nome_sensore in stazioni_sensori[n]:
+                                    nomi_colonne += f"\"{nome_sensore}\","
+
+
+                                sql = f"INSERT INTO dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{data_ora_server}\",\"{data_ora_stazione}\","
+
+                                for nome_sensore in stazioni_sensori[n]:
+                                    dato = 9999.9
+                                    try:
+                                        dato = dict_ricevuto[nome_sensore]
+                                    except:
+                                        print("aggiungere sensore nel file di configurazione del raspberry")
+
+                                    sql += f"{dato},"
+
+                                sql = sql[:-1]
+                                sql += ")"
+
+                                cur.execute(sql)
+                                
+                                conn.commit()
+
+                    except:
+                        file_info_error.error("error in saving data on database")
+                    
+                    conn.close()
 
                 except:
-                    file_info_error.error("error in saving data on database")
-                
-                conn.close()
+                    file_info_error.error("error database thread OttenimentoDati")
 
             time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
 
@@ -293,144 +312,149 @@ class RaggruppamentoDati(threading.Thread):
 
             with blocco_thread:
 
-                conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
-                cur = conn.cursor()
+                try:
 
-                try:                    
-                    data = str(datetime.datetime.utcnow())
-                    giorno_att = data.split(" ")[0].split("-")[2]
-                    mese_att = data.split(" ")[0].split("-")[1]
-                    anno_att = data.split(" ")[0].split("-")[0]
+                    conn = sqlite3.connect(f"{dir_path}/database/dati_sensori_stazioni.db", timeout=20) # connessione al database
+                    cur = conn.cursor()
 
-                    for n in stazioni_elenco_ID:   
+                    try:                    
+                        data = str(datetime.datetime.utcnow())
+                        giorno_att = data.split(" ")[0].split("-")[2]
+                        mese_att = data.split(" ")[0].split("-")[1]
+                        anno_att = data.split(" ")[0].split("-")[0]
 
-                        # estrazione dati da tabella totale
+                        for n in stazioni_elenco_ID:   
 
-                        dict_dati_giornalieri = {}
+                            # estrazione dati da tabella totale
 
-                        dict_dati_giornalieri["data_ora_stazione"] = []
+                            dict_dati_giornalieri = {}
 
-                        for tipo_sensore in stazioni_sensori[n]:
-                            dict_dati_giornalieri[tipo_sensore] = []
+                            dict_dati_giornalieri["data_ora_stazione"] = []
 
-
-                        for row in cur.execute(f"SELECT * FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_att} %:%:%.%\""): # acquisisco i dati solo del giorno
-                            dict_dati_giornalieri["data_ora_stazione"].append(row[2])
-                            for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                if row[numero_sensore+3] == None:
-                                    dict_dati_giornalieri[tipo_sensore].append(9999.9)
-                                else:
-                                    dict_dati_giornalieri[tipo_sensore].append(row[numero_sensore+3])  # +3 perché salto l'id + le due date
-
-                        dati_raggruppati_giornalieri[n] = dict_dati_giornalieri.copy()
-
-                        # estrazione dati da tabella giorni
-
-                        dict_dati_mensili = {}
-
-                        dict_dati_mensili["data_giorno"] = []
-
-                        for tipo_sensore in stazioni_sensori[n]:
-                            dict_dati_mensili[tipo_sensore] = []
-
-                        for row in cur.execute(f"SELECT * FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_att}-%\""): # acquisisco i dati solo del giorno
-                            dict_dati_mensili["data_giorno"].append(row[1])
-                            for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                if row[numero_sensore+2] == None:
-                                    dict_dati_mensili[tipo_sensore].append(9999.9)
-                                else:
-                                    dict_dati_mensili[tipo_sensore].append(row[numero_sensore+2])
-
-                        dati_raggruppati_mensili[n] = dict_dati_mensili.copy()
-
-                        # estrazione dati da tabella mese
-
-                        dict_dati_annuali = {}
-
-                        dict_dati_annuali["data_mese"] = []
-
-                        for tipo_sensore in stazioni_sensori[n]:
-                            dict_dati_annuali[tipo_sensore] = []
-
-                        for row in cur.execute(f"SELECT * FROM media_mesi_dati_stazione_{n}"):
-                            dict_dati_annuali["data_mese"].append(row[1])
-                            for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
-                                if row[numero_sensore+2] == None:
-                                    dict_dati_annuali[tipo_sensore].append(9999.9)
-                                else:
-                                    dict_dati_annuali[tipo_sensore].append(row[numero_sensore+2])
-
-                        dati_raggruppati_annuali[n] = dict_dati_annuali.copy()
+                            for tipo_sensore in stazioni_sensori[n]:
+                                dict_dati_giornalieri[tipo_sensore] = []
 
 
+                            for row in cur.execute(f"SELECT * FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_att} %:%:%.%\""): # acquisisco i dati solo del giorno
+                                dict_dati_giornalieri["data_ora_stazione"].append(row[2])
+                                for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
+                                    if row[numero_sensore+3] == None:
+                                        dict_dati_giornalieri[tipo_sensore].append(9999.9)
+                                    else:
+                                        dict_dati_giornalieri[tipo_sensore].append(row[numero_sensore+3])  # +3 perché salto l'id + le due date
+
+                            dati_raggruppati_giornalieri[n] = dict_dati_giornalieri.copy()
+
+                            # estrazione dati da tabella giorni
+
+                            dict_dati_mensili = {}
+
+                            dict_dati_mensili["data_giorno"] = []
+
+                            for tipo_sensore in stazioni_sensori[n]:
+                                dict_dati_mensili[tipo_sensore] = []
+
+                            for row in cur.execute(f"SELECT * FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_att}-%\""): # acquisisco i dati solo del giorno
+                                dict_dati_mensili["data_giorno"].append(row[1])
+                                for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
+                                    if row[numero_sensore+2] == None:
+                                        dict_dati_mensili[tipo_sensore].append(9999.9)
+                                    else:
+                                        dict_dati_mensili[tipo_sensore].append(row[numero_sensore+2])
+
+                            dati_raggruppati_mensili[n] = dict_dati_mensili.copy()
+
+                            # estrazione dati da tabella mese
+
+                            dict_dati_annuali = {}
+
+                            dict_dati_annuali["data_mese"] = []
+
+                            for tipo_sensore in stazioni_sensori[n]:
+                                dict_dati_annuali[tipo_sensore] = []
+
+                            for row in cur.execute(f"SELECT * FROM media_mesi_dati_stazione_{n}"):
+                                dict_dati_annuali["data_mese"].append(row[1])
+                                for numero_sensore, tipo_sensore in enumerate(stazioni_sensori[n]):
+                                    if row[numero_sensore+2] == None:
+                                        dict_dati_annuali[tipo_sensore].append(9999.9)
+                                    else:
+                                        dict_dati_annuali[tipo_sensore].append(row[numero_sensore+2])
+
+                            dati_raggruppati_annuali[n] = dict_dati_annuali.copy()
 
 
-                        # --------------------------------------------------------------- #
-                        # --------------------------------------------------------------- #
-                        
-                        if giorno_att != giorno_prec:
-                            sql = ""
-                            if mese_att != mese_prec:
-                                # devo estrarre i dati dalla tabella di media mesi e fare la media
-                                dict_media_dati_annuali = {}
 
-                                dict_media_dati_annuali["data_mese"] = f"{anno_att}-{mese_prec}"
 
-                                for tipo_sensore in stazioni_sensori[n]:
-                                    for row in cur.execute(f"SELECT avg(media_giorni_dati_stazione_{n}.{tipo_sensore}) FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_prec}-%\" and media_giorni_dati_stazione_{n}.{tipo_sensore} != 9999.9 and media_giorni_dati_stazione_{n}.{tipo_sensore} != 8888.8 and media_giorni_dati_stazione_{n}.{tipo_sensore} NOT NULL"):
-                                        if row[0] == None: dict_media_dati_annuali[tipo_sensore] = 9999.9
-                                        else: dict_media_dati_annuali[tipo_sensore] = row[0]
+                            # --------------------------------------------------------------- #
+                            # --------------------------------------------------------------- #
+                            
+                            if giorno_att != giorno_prec:
+                                sql = ""
+                                if mese_att != mese_prec:
+                                    # devo estrarre i dati dalla tabella di media mesi e fare la media
+                                    dict_media_dati_annuali = {}
 
-                                # inserire i dati nel database
+                                    dict_media_dati_annuali["data_mese"] = f"{anno_att}-{mese_prec}"
 
-                                nomi_colonne = "data_mese,"
-                                for nome_sensore in stazioni_sensori[n]:
-                                    nomi_colonne += f"\"{nome_sensore}\","
+                                    for tipo_sensore in stazioni_sensori[n]:
+                                        for row in cur.execute(f"SELECT avg(media_giorni_dati_stazione_{n}.{tipo_sensore}) FROM media_giorni_dati_stazione_{n} WHERE media_giorni_dati_stazione_{n}.data_giorno LIKE \"{anno_att}-{mese_prec}-%\" and media_giorni_dati_stazione_{n}.{tipo_sensore} != 9999.9 and media_giorni_dati_stazione_{n}.{tipo_sensore} != 8888.8 and media_giorni_dati_stazione_{n}.{tipo_sensore} NOT NULL"):
+                                            if row[0] == None: dict_media_dati_annuali[tipo_sensore] = 9999.9
+                                            else: dict_media_dati_annuali[tipo_sensore] = row[0]
 
-                                sql = f"INSERT INTO media_mesi_dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{dict_media_dati_annuali['data_mese']}\","
-                                
-                                for nome_sensore in stazioni_sensori[n]:
-                                    sql += f"{dict_media_dati_annuali[nome_sensore]},"
+                                    # inserire i dati nel database
 
-                                sql = sql[:-1]
-                                sql += ")"
+                                    nomi_colonne = "data_mese,"
+                                    for nome_sensore in stazioni_sensori[n]:
+                                        nomi_colonne += f"\"{nome_sensore}\","
 
-                            else: # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                                
-                                dict_media_dati_mensili = {}
+                                    sql = f"INSERT INTO media_mesi_dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{dict_media_dati_annuali['data_mese']}\","
+                                    
+                                    for nome_sensore in stazioni_sensori[n]:
+                                        sql += f"{dict_media_dati_annuali[nome_sensore]},"
 
-                                dict_media_dati_mensili["data_giorno"] = f"{anno_att}-{mese_att}-{giorno_prec}"
+                                    sql = sql[:-1]
+                                    sql += ")"
 
-                                for tipo_sensore in stazioni_sensori[n]:
-                                    for row in cur.execute(f"SELECT avg(dati_stazione_{n}.{tipo_sensore}) FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_prec} %:%:%.%\" and dati_stazione_{n}.{tipo_sensore} != 9999.9 and dati_stazione_{n}.{tipo_sensore} != 8888.8 and dati_stazione_{n}.{tipo_sensore} NOT NULL"):
-                                        if row[0] == None: dict_media_dati_mensili[tipo_sensore] = 9999.9
-                                        else: dict_media_dati_mensili[tipo_sensore] = row[0]
+                                else: # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                                    
+                                    dict_media_dati_mensili = {}
 
-                                
-                                # inserire i dati nel database
+                                    dict_media_dati_mensili["data_giorno"] = f"{anno_att}-{mese_att}-{giorno_prec}"
 
-                                nomi_colonne = "data_giorno,"
-                                for nome_sensore in stazioni_sensori[n]:
-                                    nomi_colonne += f"\"{nome_sensore}\","
+                                    for tipo_sensore in stazioni_sensori[n]:
+                                        for row in cur.execute(f"SELECT avg(dati_stazione_{n}.{tipo_sensore}) FROM dati_stazione_{n} WHERE dati_stazione_{n}.data_ora_stazione LIKE \"{anno_att}-{mese_att}-{giorno_prec} %:%:%.%\" and dati_stazione_{n}.{tipo_sensore} != 9999.9 and dati_stazione_{n}.{tipo_sensore} != 8888.8 and dati_stazione_{n}.{tipo_sensore} NOT NULL"):
+                                            if row[0] == None: dict_media_dati_mensili[tipo_sensore] = 9999.9
+                                            else: dict_media_dati_mensili[tipo_sensore] = row[0]
 
-                                sql = f"INSERT INTO media_giorni_dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{dict_media_dati_mensili['data_giorno']}\","
-                                
-                                for nome_sensore in stazioni_sensori[n]:
-                                    sql += f"{dict_media_dati_mensili[nome_sensore]},"
+                                    
+                                    # inserire i dati nel database
 
-                                sql = sql[:-1]
-                                sql += ")"
-                                
-                            cur.execute(sql)
-                            conn.commit()
-                        
-                        giorno_prec = giorno_att
-                        mese_prec = mese_att
+                                    nomi_colonne = "data_giorno,"
+                                    for nome_sensore in stazioni_sensori[n]:
+                                        nomi_colonne += f"\"{nome_sensore}\","
+
+                                    sql = f"INSERT INTO media_giorni_dati_stazione_{n} ({nomi_colonne[:-1]}) VALUES (\"{dict_media_dati_mensili['data_giorno']}\","
+                                    
+                                    for nome_sensore in stazioni_sensori[n]:
+                                        sql += f"{dict_media_dati_mensili[nome_sensore]},"
+
+                                    sql = sql[:-1]
+                                    sql += ")"
+                                    
+                                cur.execute(sql)
+                                conn.commit()
+                            
+                            giorno_prec = giorno_att
+                            mese_prec = mese_att
+
+                    except:
+                        file_info_error.error("error in extract data from database")
+
+                    conn.close()   
 
                 except:
-                    file_info_error.error("error in extract data from database")
-
-                conn.close()                    
+                    file_info_error.error("error database thread OttenimentoDati")             
             
             time.sleep(SECONDI_TRA_AGGIORNAMENTO_DATI)
 
@@ -458,9 +482,9 @@ class EliminazioneDatiVecchi(threading.Thread):
                 with blocco_thread:
 
                     try: 
-                        errore = False    
-                        
-                        data_ora_corrente = str(data_ora_corrente).replace(":", "-")  
+                        errore = False
+
+                        data_ora_corrente = str(data_ora_corrente).replace(":", "-")    
                         
                         # rinominazione database
                         subprocess.run(["mv", f"{dir_path}/database/dati_sensori_stazioni.db", f"{dir_path}/database/{data_ora_corrente}.db"])
