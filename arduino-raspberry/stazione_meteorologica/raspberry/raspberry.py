@@ -140,8 +140,9 @@ class ScattaFoto(threading.Thread):
                 folder = m.find('StazioneMeteorologica/foto', exclude_deleted=True)
                 m.upload(f"{dir_path}/foto/{nome_foto}", folder[0])
 
-                subprocess.call(f"rm {dir_path}/foto/*", shell=True)
                 print("foto caricata ed ora la elimino")
+                subprocess.call(f"rm {dir_path}/foto/*", shell=True)
+                
 
             except:
                 file_info_error.error("error upload mega")
