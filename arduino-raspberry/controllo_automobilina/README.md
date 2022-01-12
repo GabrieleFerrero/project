@@ -23,7 +23,7 @@ L'automobilina si comanda attraverso un'applicazione android
 ![interfaccia](./foto/img_01.jpeg)
 
 
-Come si può vedere dall'immagine riportata sopra, a sinistra è presente una `seekbar` dove è possibile regolare il verso e la velocità dell'automobilina, mentre a destra (dove nella foto è presente la pagina di google) è il video in diretta registrato dal telefono sopra all'automobilina.
+Come si può vedere dall'immagine riportata sopra, a sinistra è presente una `seekbar` dove è possibile regolare il verso e la velocità dell'automobilina, mentre a destra (dove nella foto è presente la pagina di google) sarà presente il video in diretta registrato dal telefono sopra all'automobilina.
 Inoltre per poter sterzare è sufficiente inclinare il telefono.
 
 ---
