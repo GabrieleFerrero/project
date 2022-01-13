@@ -262,26 +262,6 @@ function eseguiComandi(){
     if(stringa_da_inviare.slice(0, -1).includes("NaN")){ alert("Errore nel codice!")}
     else{
         post("/comandi/esegui", stringa_da_inviare.slice(0, -1));
-
-        const idInterval = setInterval(function(){
-            var n_istruzione = parseInt(get("/ottieni-dati/numero-istruzione")["numero_istruzione"]);
-            console.log("N istruzione "+n_istruzione);
-
-            if (n_istruzione < comandi.length){
-                coloraRiga(n_istruzione);
-            }
-            else{
-                clearInterval(idInterval);
-                document.getElementById("btn_esegui").disabled = false;
-                document.getElementById("btn_pausa").disabled = true;
-                document.getElementById("btn_termina").disabled = true;
-                document.getElementById("btn_riprendi").disabled = true;
-                coloraRiga(n_istruzione);
-                termina = false;
-            }
-            
-        }, 5000);
-
     }
 }
 
@@ -292,7 +272,6 @@ function get(indirizzo) {
         url: indirizzo,
         type: 'get',
         dataType: 'json',
-        async: false,
         success: function(dato){
             dati = dato;
         }
@@ -347,7 +326,6 @@ function terminaCodice(){
 function main(dict_comandi){ 
     dizionario_comandi_validi = dict_comandi;
     disegnaCardComandi();
-    setInterval(ottieniPosizioniAttuali, 5000);
 }
 
 function disegnaCardComandi(){
@@ -375,23 +353,23 @@ function disegnaCardComandi(){
     document.getElementById("tipi_comando").innerHTML = stringa_card_comandi;
 }
 
-function ottieniPosizioniAttuali(){
-    var html_dati = "";
-    var dati = get("/ottieni-dati/assi");
-
-    console.log(dati)
-   
+function aggiornaCoordinate(coord){
+    console.log(coord)
     document.getElementById("tr_posizione").innerHTML ='<tr>'+
-    '<th colspan="2">X: '+dati["X"]["stato_asse"]+'</th>'+
-    '<th colspan="2">Y: '+dati["Y"]["stato_asse"]+'</th>'+
-    '<th colspan="2">Z: '+dati["Z_SX"]["stato_asse"]+'</th>';
+    '<th colspan="2">X: '+coord.split("%")[0]+'</th>'+
+    '<th colspan="2">Y: '+coord.split("%")[1]+'</th>'+
+    '<th colspan="2">Z: '+coord.split("%")[2]+'</th>';
+}
+
+function aggiornaFinecorsa(dati_finecorsa){
+    var html_dati = "";
     
-    html_dati+= scegliColore(dati["X"]["stato_finecorsa"][0])+'FC X 1</th>';
-    html_dati+= scegliColore(dati["X"]["stato_finecorsa"][1])+'FC X 2</th>';
-    html_dati+= scegliColore(dati["Y"]["stato_finecorsa"][0])+'FC Y 1</th>';
-    html_dati+= scegliColore(dati["Y"]["stato_finecorsa"][1])+'FC Y 2</th>';
-    html_dati+= scegliColore(dati["Z_SX"]["stato_finecorsa"][0])+'FC Z 1</th>';
-    html_dati+= scegliColore(dati["Z_SX"]["stato_finecorsa"][1])+'FC Z 2</th>';
+    html_dati+= scegliColore(dati_finecorsa.split("%")[0])+'FC X 1</th>';
+    html_dati+= scegliColore(dati_finecorsa.split("%")[1])+'FC X 2</th>';
+    html_dati+= scegliColore(dati_finecorsa.split("%")[2])+'FC Y 1</th>';
+    html_dati+= scegliColore(dati_finecorsa.split("%")[3])+'FC Y 2</th>';
+    html_dati+= scegliColore(dati_finecorsa.split("%")[4])+'FC Z 1</th>';
+    html_dati+= scegliColore(dati_finecorsa.split("%")[5])+'FC Z 2</th>';
 
     document.getElementById("tr_finecorsa").innerHTML = html_dati;
           
@@ -399,7 +377,7 @@ function ottieniPosizioniAttuali(){
 
 
 function scegliColore(valore){
-    if (valore){
+    if (valore == "True"){
         return '<th style="background-color: rgb(255, 124, 124);">';
     }
     return '<th style="background-color: rgb(124, 255, 174);">';

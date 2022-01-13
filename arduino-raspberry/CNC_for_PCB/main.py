@@ -4,9 +4,13 @@ from time import sleep
 import threading
 import math
 import numpy as np
+import socket
 from werkzeug.utils import secure_filename
 from pathlib import Path
-from flask import Flask, render_template, jsonify, request, send_file
+import websockets
+import asyncio
+import copy
+from flask import Flask, render_template, jsonify, request
 #-----------#
 
 dir_path = str(Path(__file__).parent.resolve())
@@ -24,7 +28,7 @@ app.config['MAX_CONTENT_PATH'] = 1024*1024*10 # 10 Mbyte
 
 @app.route('/')
 def ottieni_pagina_di_controllo():
-    return render_template('index.html', comandi = comandi_parametri)
+    return render_template('index.html', dati = [comandi_parametri, extract_ip()])
 
 @app.route('/comandi/<azione>', methods = ['GET', 'POST'])
 def ricevi_comandi(azione):
@@ -93,6 +97,8 @@ def ricevi_comandi(azione):
 
                 return jsonify({"stato_operazione":"esegui_finito"})
 
+            return jsonify({"stato_operazione":"in_esecuzione"})
+
             
 
         elif azione == "esegui-punta":
@@ -124,6 +130,8 @@ def ricevi_comandi(azione):
                 lock_esegui_punta.release()
 
                 return jsonify({"stato_operazione":"esegui_punta_finito"})
+
+            return jsonify({"stato_operazione":"in_esecuzione"})
 
 
                         
@@ -195,6 +203,56 @@ ALZA_PUNTA = -500 #sempre negativo
 ABBASSA_PUNTA = 500 #sempre positivo
 #-----------#
 
+# CREAZIONE WEBSOCKET #
+class MyWsServer(threading.Thread):
+    def __init__(self, address, port):
+        super().__init__()
+        self.port = port
+        self.address = address
+
+    def run(self):
+        loop = asyncio.new_event_loop()
+        ws_server = websockets.serve(self.invia_dati_aggiornamento, self.address, self.port,
+                                     ping_timeout=None, ping_interval=None, loop=loop)
+        loop.run_until_complete(ws_server)
+        loop.run_forever()
+
+    async def invia_dati_aggiornamento(self, websocket, path):
+        n_istr_precedente = numero_istruzione
+        s_assi_precedente = {}
+        while True:
+            
+            n_istr_attuale = numero_istruzione
+            if n_istr_precedente != n_istr_attuale:
+                print(f"################### {n_istr_attuale} ####################")
+                await websocket.send(f"numero_istruzione#{n_istr_attuale}")
+                n_istr_precedente = n_istr_attuale
+            
+            s_assi_attuale = copy.deepcopy(stato_assi)
+            
+            if s_assi_attuale != s_assi_precedente:
+                print("!!!!!!!È diverso!!!!!!!!!!!")
+                #come vengono inviati i dati→  valori_attuali:x%y%z @ finecorsa:x%y%z
+                await websocket.send(f'stato_assi#{s_assi_attuale["X"]["stato_asse"]}%{s_assi_attuale["Y"]["stato_asse"]}%{s_assi_attuale["Z_DX"]["stato_asse"]}#'+
+                f'{s_assi_attuale["X"]["stato_finecorsa"][0]}%{s_assi_attuale["X"]["stato_finecorsa"][1]}%'+
+                f'{s_assi_attuale["Y"]["stato_finecorsa"][0]}%{s_assi_attuale["Y"]["stato_finecorsa"][1]}%'+
+                f'{s_assi_attuale["Z_DX"]["stato_finecorsa"][0]}%{s_assi_attuale["Z_DX"]["stato_finecorsa"][1]}')
+                s_assi_precedente = copy.deepcopy(s_assi_attuale)
+            
+
+#---------------------#
+
+def extract_ip():
+    st = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:       
+        st.connect(('10.255.255.255', 1))
+        IP = st.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        st.close()
+    return IP
+
 def settaggio_motori():
     GPIO.setmode(GPIO.BCM)  #tipo di riferimento, numerazione della cpu
     GPIO.setwarnings(False)
@@ -214,6 +272,7 @@ def muovi_motore_con_lock(index, asse, spostamento):
         GPIO.output(pins[asse]["pul"], GPIO.HIGH)
         sleep(PAUSA_TRA_IMPULSI)
         GPIO.output(pins[asse]["pul"], GPIO.LOW)
+        sleep(PAUSA_TRA_IMPULSI)
         stato_assi[asse]["stato_asse"]+= spostamento
         return True
     return False
@@ -225,22 +284,24 @@ def muovi_motore_senza_lock(index, asse, spostamento):
         GPIO.output(pins[asse]["pul"], GPIO.HIGH)
         sleep(PAUSA_TRA_IMPULSI)
         GPIO.output(pins[asse]["pul"], GPIO.LOW)
+        sleep(PAUSA_TRA_IMPULSI)
         stato_assi[asse]["stato_asse"]+= spostamento
         return True
     return False
-    
-        
 
 
 def verifica_direzione(asse, spostamento):
     if spostamento >= 0:
         stato_assi[asse]["stato_direzione"] = True
         GPIO.output(pins[asse]["dir"], GPIO.HIGH)
+        sleep(PAUSA_TRA_IMPULSI)
         return 0
     else:
         stato_assi[asse]["stato_direzione"] = False
         GPIO.output(pins[asse]["dir"], GPIO.LOW)
+        sleep(PAUSA_TRA_IMPULSI)
         return 1
+
 
 def muovi_due_motori(comandi, tipo_funzione_muovi_motore):
     
@@ -272,7 +333,7 @@ def muovi_due_motori(comandi, tipo_funzione_muovi_motore):
         differenza_impulsi = spostamento[0] - spostamento_arrotondato
         ogni_quanto_impulso = 0
         if differenza_impulsi != 0:
-            ogni_quanto_impulso = round(abs(spostamento_arrotondato)/abs(differenza_impulsi))
+            ogni_quanto_impulso = abs(spostamento_arrotondato)//abs(differenza_impulsi)
         #--------------------#
 
         for a in range (abs(spostamento[1])):
@@ -465,6 +526,9 @@ def main():
     
     azzeramento_motori()
     print("Motori settati correttamente!\n ################## Pronto all'uso ###################")
+
+    thread_in = MyWsServer('0.0.0.0', 5678)
+    thread_in.start()
 
     app.run(host='0.0.0.0')
                 

@@ -61,14 +61,48 @@ body{
     width: 8%;
     height: auto;
 }
+.btn_tabella{
+    border-radius: 5%;
+    border-width: 0ch;
+    width: 40%;
+    height: auto;
+}
+.th_btn{
+    width: 35%;
+    height: auto;
+}
 #file_picker{
     margin-left: 5%;
     float: right;
 }
 
+
     </style>
+
+    <script>
+        var ws = new WebSocket("ws://{{dati[1]}}:5678/")
+            ws.onmessage = function (event) {
+                console.log(event.data.split("#")[0]);
+                if (event.data.split("#")[0] == "numero_istruzione"){
+                    console.log(event.data);
+                    coloraRiga(parseInt(event.data.split("#")[1]));
+                    if(parseInt(event.data.split("#")[1]) > comandi.length){
+                        document.getElementById("btn_esegui").disabled = false;
+                        document.getElementById("btn_pausa").disabled = true;
+                        document.getElementById("btn_termina").disabled = true;
+                        document.getElementById("btn_riprendi").disabled = true;
+                        termina = false;
+                    }
+                }
+                else if (event.data.split("#")[0] == "stato_assi"){
+                    aggiornaCoordinate(event.data.split("#")[1])
+                    aggiornaFinecorsa(event.data.split("#")[2])
+                }
+                
+            };
+    </script>
 </head>
-<body onload="main({{comandi}});">
+<body onload="main({{dati[0]}});">
     <div id="div_sx">
         <div id="div_pulsanti">
             <!--
@@ -100,10 +134,10 @@ body{
                     <th colspan="2"><input id="coordx" type="text" placeholder="coord X" size="6"></th>
                     <th colspan="2"><input id="coordy" type="text" placeholder="coord Y" size="6"></th>
                     <th colspan="2"><input id="coordz" type="text" placeholder="coord Z" size="6"></th>
-                    <th><button" title="Sposta punta" onclick="spostaPunta()" class="btn_pulsanti btn-success"><img style="width: 50%; height: auto;" src="/static/img/esegui.png">
-                    </button></th>
-                    <th><button id="btn_setZero" title="scegli questo come 0" onclick="setZero()" class="btn_pulsanti btn-primary"><img style="width: 50%; height: auto;" src="/static/img/zero.png">
-                    </button></th>
+                    <th class="th_btn">
+                        <button style="margin-right: 5%;" title="Sposta punta" onclick="spostaPunta()" class="btn_tabella btn-success"><img style="width: 20%; height: auto;" src="/static/img/esegui.png">
+                    </button><button  style="margin-left: 5%;"id="btn_setZero" title="scegli questo come 0" onclick="setZero()" class="btn_tabella btn-primary"><img style="width: 20%; height: auto;" src="/static/img/zero.png">
+                    </th>
                 </tr>
                 <tr id="tr_finecorsa"></tr>
             </table>
