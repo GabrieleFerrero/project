@@ -30,6 +30,7 @@ import datetime
 import os
 import subprocess
 import pandas as pd
+import urllib3
 
 """ //////////////////////////////////////////////////////////////// """
 
@@ -67,6 +68,7 @@ print(dir_path)
 
 #      FILE PER ERRORI     #
 file_info_error= logzero.setup_logger(name='file_info_error', logfile=f"{dir_path}/log/file_info_error.csv") 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # ------------------------ #
 
 #      DATI STAZIONI       #
