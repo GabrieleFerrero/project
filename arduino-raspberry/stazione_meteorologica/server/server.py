@@ -234,7 +234,7 @@ class OttenimentoDati(threading.Thread):
                             continuare = True 
 
                             try:
-                                dict_ricevuto = eval(requests.get(f"{stazioni_address[n]}/stazione-meteorologica/dato/sensori-attuali").text) # richiesta di invio dati
+                                dict_ricevuto = eval(requests.get(f"{stazioni_address[n]}/stazione-meteorologica/dato/sensori-attuali", verify=False, timeout=20).text) # richiesta di invio dati
                                 # anche se ci sono degli / di troppo tra stazioni_address[n] e link della risorsa non importa
                             except:
                                 file_info_error.error(f"station number {n} data reception error")
