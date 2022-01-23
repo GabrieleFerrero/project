@@ -1,3 +1,0 @@
-pioggia,uv,luce,pressione,umidita,temperatura,temperatura_interna
-0
-https://gaseous-narwhal-9173.dataplicity.io
